@@ -14,14 +14,16 @@ import kotlin.reflect.KProperty
 Пример:
 val viewModel : TestViewModel by provideViewModel("test args")
  */
-class ViewModelDelegate<T : ViewModel>(private val clazz: Class<T>, private val arg: Any?) :
-    ReadOnlyProperty<FragmentActivity, T> {
+class ViewModelDelegate<T : ViewModel>(
+    private val clazz: Class<T>,
+    private val arg: Any?
+) : ReadOnlyProperty<FragmentActivity, T> {
 
     private lateinit var viewModel :T
 
     override fun getValue(thisRef: FragmentActivity, property: KProperty<*>): T {
         if (!this::viewModel.isInitialized) {
-            viewModel = ViewModelProvider(thisRef, ViewModelFactory(arg)).get(clazz)
+            viewModel = ViewModelProvider(thisRef, ViewModelFactory(arg ?: "0")).get(clazz)
         }
         return viewModel
     }
