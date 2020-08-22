@@ -2,6 +2,8 @@
     <string name="app_name">Skill Articles</string>
 
     <string name="root_loading">loading…</string>
-
     <string name="submenu_dark_theme">Темный режим</string>
+    <string name="menu_title_search">Search</string>
+    <string name="article_search_placeholder">Search</string>
+    <string name="search_hot_found">Not found</string>
 </resources>
