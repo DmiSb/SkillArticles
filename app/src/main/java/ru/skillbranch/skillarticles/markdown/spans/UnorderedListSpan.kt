@@ -17,21 +17,31 @@ class UnorderedListSpan(
 ) : LeadingMarginSpan {
 
     override fun getLeadingMargin(first: Boolean): Int {
-        return (4*bulletRadius +gapWidth).toInt()
+        return (4 * bulletRadius + gapWidth).toInt()
     }
 
     override fun drawLeadingMargin(
-        canvas: Canvas, paint: Paint, currentMarginLocation: Int, paragraphDirection: Int,
-        lineTop: Int, lineBaseline: Int, lineBottom: Int, text: CharSequence?, lineStart: Int,
-        lineEnd: Int, isFirstLine: Boolean, layout: Layout?
+        canvas: Canvas,
+        paint: Paint,
+        currentMarginLocation: Int,
+        paragraphDirection: Int,
+        lineTop: Int,
+        lineBaseline: Int,
+        lineBottom: Int,
+        text: CharSequence?,
+        lineStart: Int,
+        lineEnd: Int,
+        isFirstLine: Boolean,
+        layout: Layout?
     ) {
-        if(isFirstLine) {
+        if (isFirstLine) {
             paint.withCustomColor {
                 canvas.drawCircle(
                     gapWidth + currentMarginLocation + bulletRadius,
-                    (lineTop + lineBottom)/2f,
+                    (lineTop + lineBottom) / 2f,
                     bulletRadius,
-                    paint)
+                    paint
+                )
             }
         }
     }
@@ -39,8 +49,10 @@ class UnorderedListSpan(
     private inline fun Paint.withCustomColor(block: () -> Unit) {
         val oldColor = color
         val oldStyle = style
+
         color = bulletColor
         style = Paint.Style.FILL
+
         block()
 
         color = oldColor

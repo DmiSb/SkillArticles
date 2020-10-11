@@ -12,12 +12,13 @@ class HorizontalRuleSpan(
     @ColorInt
     val ruleColor: Int
 ) : ReplacementSpan() {
+
     override fun getSize(
         paint: Paint,
         text: CharSequence?,
         start: Int,
         end: Int,
-        fm: Paint.FontMetricsInt?
+        fontMetrics: Paint.FontMetricsInt?
     ): Int {
         return 0
     }
@@ -33,7 +34,7 @@ class HorizontalRuleSpan(
         bottom: Int,
         paint: Paint
     ) {
-        paint.forLine{
+        paint.forLine {
             canvas.drawLine(
                 0f,
                 (top + bottom) / 2f,

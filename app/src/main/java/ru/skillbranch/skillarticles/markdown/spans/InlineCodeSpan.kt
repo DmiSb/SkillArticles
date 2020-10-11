@@ -19,14 +19,16 @@ class InlineCodeSpan(
     @Px
     private val padding: Float
 ) : ReplacementSpan() {
+
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     var rect: RectF = RectF()
+
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     var measureWidth: Int = 0
 
     override fun getSize(
         paint: Paint,
-        text: CharSequence?,
+        text: CharSequence,
         start: Int,
         end: Int,
         fm: Paint.FontMetricsInt?
@@ -82,6 +84,7 @@ class InlineCodeSpan(
 
         color = bgColor
         style = Paint.Style.FILL
+
         block()
 
         color = oldColor

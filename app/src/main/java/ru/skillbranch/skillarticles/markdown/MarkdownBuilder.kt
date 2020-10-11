@@ -7,6 +7,7 @@ import android.text.SpannedString
 import android.text.style.StrikethroughSpan
 import android.text.style.StyleSpan
 import android.text.style.URLSpan
+import androidx.core.content.ContextCompat
 import androidx.core.text.buildSpannedString
 import androidx.core.text.inSpans
 import ru.skillbranch.skillarticles.R
@@ -15,20 +16,23 @@ import ru.skillbranch.skillarticles.extensions.dpToPx
 import ru.skillbranch.skillarticles.markdown.spans.*
 
 class MarkdownBuilder(context: Context) {
-    private val colorSecondary = context.attrValue(R.attr.colorSecondary)
-    private val colorPrimary = context.attrValue(R.attr.colorPrimary)
-    private val colorDivider = context.getColor(R.color.color_divider)
-    private val colorOnSurface = context.attrValue(R.attr.colorOnSurface)
-    private val colorSurface = context.attrValue(R.attr.colorSurface)
+
+    private val colorPrimary: Int = context.attrValue(R.attr.colorPrimary)
+    private val colorSurface: Int = context.attrValue(R.attr.colorSurface)
+    private val colorDivider: Int = context.getColor(R.color.color_divider)
+    private val colorSecondary: Int = context.attrValue(R.attr.colorSecondary)
+    private val colorOnSurface: Int = context.attrValue(R.attr.colorOnSurface)
+
     private val gap: Float = context.dpToPx(8)
-    private val bulletRadius = context.dpToPx(4)
-    private val strikeWidth = context.dpToPx(4)
-    private val quoteWidth = context.dpToPx(4)
-    private val headerMarginTop = context.dpToPx(12)
-    private val headerMarginBottom = context.dpToPx(8)
-    private val ruleWidth = context.dpToPx(2)
-    private val cornerRadius = context.dpToPx(8)
-    private val linkIcon = context.getDrawable(R.drawable.ic_link_black_24dp)!!
+    private val ruleWidth: Float = context.dpToPx(2)
+    private val strikeWidth: Float = context.dpToPx(4)
+    private val bulletRadius: Float = context.dpToPx(4)
+    private val cornerRadius: Float = context.dpToPx(8)
+
+    private val linkIcon = ContextCompat.getDrawable(context, R.drawable.ic_link_black_24dp)!!
+
+    private val headerMarginTop: Float = context.dpToPx(12)
+    private val headerMarginBottom: Float = context.dpToPx(8)
 
     fun markdownToSpan(string: String): SpannedString {
         val markdown = MarkdownParser.parse(string)
@@ -41,45 +45,58 @@ class MarkdownBuilder(context: Context) {
 
     private fun buildElement(element: Element, builder: SpannableStringBuilder): CharSequence {
         return builder.apply {
-            when(element) {
-                is Element.Text -> append(element.text)
+            when (element) {
+                is Element.Text -> {
+                    append(element.text)
+                }
                 is Element.UnorderedListItem -> {
                     inSpans(UnorderedListSpan(gap, bulletRadius, colorSecondary)) {
-                        for (i in element.elements) {
-                            buildElement(i, builder)
+                        for (child in element.elements) {
+                            buildElement(child, builder)
                         }
                     }
                 }
                 is Element.Quote -> {
-                    inSpans(BlockquotesSpan(gap, quoteWidth, colorSecondary), StyleSpan(Typeface.ITALIC)) {
-                        for (i in element.elements) {
-                            buildElement(i, builder)
+                    inSpans(
+                        BlockquotesSpan(gap, strikeWidth, colorSecondary),
+                        StyleSpan(Typeface.ITALIC)
+                    ) {
+                        for (child in element.elements) {
+                            buildElement(child, builder)
                         }
                     }
                 }
                 is Element.Header -> {
-                    inSpans(HeaderSpan(element.level, colorPrimary, colorDivider, headerMarginTop, headerMarginBottom)) {
+                    inSpans(
+                        HeaderSpan(
+                            element.level,
+                            colorPrimary,
+                            colorDivider,
+                            headerMarginTop,
+                            headerMarginBottom
+                        )
+                    ) {
                         append(element.text)
                     }
                 }
                 is Element.Italic -> {
                     inSpans(StyleSpan(Typeface.ITALIC)) {
-                        for (i in element.elements) {
-                            buildElement(i, builder)
+                        for (child in element.elements) {
+                            buildElement(child, builder)
                         }
                     }
                 }
                 is Element.Bold -> {
                     inSpans(StyleSpan(Typeface.BOLD)) {
-                        for(i in element.elements) {
-                            buildElement(i,builder)
+                        for (child in element.elements) {
+                            buildElement(child, builder)
                         }
                     }
                 }
                 is Element.Strike -> {
                     inSpans(StrikethroughSpan()) {
-                        for(i in element.elements) {
-                            buildElement(i, builder)
+                        for (child in element.elements) {
+                            buildElement(child, builder)
                         }
                     }
                 }
@@ -94,21 +111,35 @@ class MarkdownBuilder(context: Context) {
                     }
                 }
                 is Element.Link -> {
-                    inSpans(IconLinkSpan(linkIcon, colorSecondary, gap, colorPrimary, strikeWidth), URLSpan(element.link)) {
+                    inSpans(
+                        IconLinkSpan(linkIcon, colorSecondary, gap, colorPrimary, strikeWidth),
+                        URLSpan(element.link)
+                    ) {
                         append(element.text)
                     }
                 }
                 is Element.OrderedListItem -> {
                     inSpans(OrderedListSpan(gap, element.order, colorSecondary)) {
-                        for(i in element.elements) {
-                            buildElement(i, builder)
+                        for (child in element.elements) {
+                            buildElement(child, builder)
                         }
                     }
                 }
                 is Element.BlockCode -> {
-                    inSpans(BlockCodeSpan(colorOnSurface, colorSurface, cornerRadius, gap, element.type)) {
+                    inSpans(
+                        BlockCodeSpan(
+                            colorOnSurface,
+                            colorSurface,
+                            cornerRadius,
+                            gap,
+                            element.type
+                        )
+                    ) {
                         append(element.text)
                     }
+                }
+                else -> {
+                    append(element.text)
                 }
             }
         }

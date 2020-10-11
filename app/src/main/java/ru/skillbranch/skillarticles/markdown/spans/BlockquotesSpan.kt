@@ -16,24 +16,33 @@ class BlockquotesSpan(
     private val lineColor: Int
 ) : LeadingMarginSpan {
 
+    override fun getLeadingMargin(first: Boolean): Int {
+        return (quoteWidth + gapWidth).toInt()
+    }
+
     override fun drawLeadingMargin(
-        canvas: Canvas, paint: Paint, currentMarginLocation: Int, paragraphDirection: Int,
-        lineTop: Int, lineBaseline: Int, lineBottom: Int, text: CharSequence?, lineStart: Int,
-        lineEnd: Int, isFirstLine: Boolean, layout: Layout?
+        canvas: Canvas,
+        paint: Paint,
+        currentMarginLocation: Int,
+        paragraphDirection: Int,
+        lineTop: Int,
+        lineBaseline: Int,
+        lineBottom: Int,
+        text: CharSequence?,
+        lineStart: Int,
+        lineEnd: Int,
+        isFirstLine: Boolean,
+        layout: Layout?
     ) {
         paint.withCustomColor {
-            canvas.drawLine( // TODO: Понять как это расчитывается
-                quoteWidth/2f,
+            canvas.drawLine(
+                quoteWidth / 2f,
                 lineTop.toFloat(),
-                quoteWidth/2f,
+                quoteWidth / 2f,
                 lineBottom.toFloat(),
                 paint
             )
         }
-    }
-
-    override fun getLeadingMargin(first: Boolean): Int {
-        return (quoteWidth + gapWidth).toInt()
     }
 
     private inline fun Paint.withCustomColor(block: () -> Unit) {

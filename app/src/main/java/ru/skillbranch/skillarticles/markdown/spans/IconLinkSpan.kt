@@ -23,11 +23,30 @@ class IconLinkSpan(
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     var iconSize = 0
+
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     var textWidth = 0f
-    private val dashs = DashPathEffect(floatArrayOf(dotWidth, dotWidth), 0f)
+
+    private val dashes = DashPathEffect(floatArrayOf(dotWidth, dotWidth), 0f)
+
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     var path = Path()
+
+    override fun getSize(
+        paint: Paint,
+        text: CharSequence?,
+        start: Int,
+        end: Int,
+        fontMetrics: Paint.FontMetricsInt?
+    ): Int {
+        if (fontMetrics != null) {
+            iconSize = fontMetrics.descent - fontMetrics.ascent
+            linkDrawable.setBounds(0, 0, iconSize, iconSize)
+            linkDrawable.setTint(iconColor)
+        }
+        textWidth = paint.measureText(text.toString(), start, end)
+        return (iconSize + padding + textWidth).toInt()
+    }
 
     override fun draw(
         canvas: Canvas,
@@ -40,18 +59,19 @@ class IconLinkSpan(
         bottom: Int,
         paint: Paint
     ) {
-        val textStart= x + iconSize + padding
-        paint.forLine { // подч
-            path.reset() // сбрасываем
-            path.moveTo(textStart, bottom.toFloat()) // Смещаемся до позиции после иконки
-            path.lineTo(textStart + textWidth, bottom.toFloat()) // Линия до конца текста
+        val textStart = x + iconSize + padding
+
+        paint.forLine {
+            path.reset()
+            path.moveTo(textStart, bottom.toFloat())
+            path.lineTo(textStart + textWidth, bottom.toFloat())
             canvas.drawPath(path, paint)
         }
 
         paint.forIcon {
             canvas.save()
-            val trY =  bottom - linkDrawable.bounds.bottom
-            canvas.translate(x, trY.toFloat())
+            val tY = bottom - linkDrawable.bounds.bottom
+            canvas.translate(x, tY.toFloat())
             linkDrawable.draw(canvas)
             canvas.restore()
         }
@@ -61,37 +81,18 @@ class IconLinkSpan(
         }
     }
 
-
-    override fun getSize(
-        paint: Paint,
-        text: CharSequence?,
-        start: Int,
-        end: Int,
-        fm: Paint.FontMetricsInt?
-    ): Int {
-        if (fm != null){
-            iconSize = fm.descent - fm.ascent // размер фонта
-            linkDrawable.setBounds(0, 0, iconSize, iconSize)
-            linkDrawable.setTint(iconColor)
-        }
-        textWidth = paint.measureText(text.toString(), start, end)
-        return (iconSize + padding + textWidth).toInt()
-    }
-
-
     private inline fun Paint.forLine(block: () -> Unit) {
         val oldColor = color
         val oldStyle = style
         val oldWidth = strokeWidth
 
-        pathEffect = dashs // прерывистая линия
+        pathEffect = dashes
         color = textColor
-        style = Paint.Style.STROKE // просто линия
+        style = Paint.Style.STROKE
         strokeWidth = 0f
 
-
         block()
-        // Восстановим старый цвет - чтобы bullet цветом не продолжил рисовать прочие элементы
+
         color = oldColor
         style = oldStyle
         strokeWidth = oldWidth
@@ -99,16 +100,20 @@ class IconLinkSpan(
 
     private inline fun Paint.forText(block: () -> Unit) {
         val oldColor = color
+
         color = textColor
+
         block()
+
         color = oldColor
     }
 
     private inline fun Paint.forIcon(block: () -> Unit) {
         val oldColor = color
         val oldStyle = style
+
         color = textColor
-        style = Paint.Style.STROKE // просто линия
+        style = Paint.Style.STROKE
 
         block()
 
