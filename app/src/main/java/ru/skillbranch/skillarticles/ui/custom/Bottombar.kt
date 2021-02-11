@@ -16,20 +16,16 @@ import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.ui.custom.behaviors.BottombarBehavior
 import kotlin.math.hypot
 
-/**
- * Custom Bottombar
- */
 class Bottombar @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : ConstraintLayout(context, attrs, defStyleAttr), CoordinatorLayout.AttachedBehavior{
+) : ConstraintLayout(context, attrs, defStyleAttr), CoordinatorLayout.AttachedBehavior {
 
-    var isSearchMode = false
+    var isSearchMode: Boolean = false
 
     init {
         View.inflate(context, R.layout.layout_bottombar, this)
-
         val materialBg = MaterialShapeDrawable.createWithElevationOverlay(context)
         materialBg.elevation = elevation
         background = materialBg
@@ -39,17 +35,14 @@ class Bottombar @JvmOverloads constructor(
         return BottombarBehavior()
     }
 
-    //save state
     override fun onSaveInstanceState(): Parcelable? {
         val savedState = SavedState(super.onSaveInstanceState())
         savedState.ssIsSearchMode = isSearchMode
         return savedState
     }
 
-    //restore state
     override fun onRestoreInstanceState(state: Parcelable) {
         super.onRestoreInstanceState(state)
-
         if (state is SavedState) {
             isSearchMode = state.ssIsSearchMode
             reveal.isVisible = isSearchMode
@@ -60,8 +53,7 @@ class Bottombar @JvmOverloads constructor(
     fun setSearchState(search: Boolean) {
         if (isSearchMode == search || !isAttachedToWindow) return
         isSearchMode = search
-        if (isSearchMode) animateShowSearchPanel()
-        else animateHideSearchPanel()
+        if (isSearchMode) animateShowSearchPanel() else animateHideSearchPanel()
     }
 
     private fun animateHideSearchPanel() {
@@ -94,17 +86,16 @@ class Bottombar @JvmOverloads constructor(
 
     fun bindSearchInfo(searchCount: Int = 0, position: Int = 0) {
         if (searchCount == 0) {
-            tv_search_result.text = context.getString(R.string.search_hot_found)
+            tv_search_result.text = resources.getString(R.string.not_found)
             btn_result_up.isEnabled = false
             btn_result_down.isEnabled = false
         } else {
-            val text = "${position.inc()} of $searchCount"
-            tv_search_result.text = text
+            val resultText = "${position.inc()} of $searchCount"
+            tv_search_result.text = resultText
             btn_result_up.isEnabled = true
             btn_result_down.isEnabled = true
         }
 
-        //lock button presses in min/max positions
         when (position) {
             0 -> btn_result_up.isEnabled = false
             searchCount - 1 -> btn_result_down.isEnabled = false
@@ -112,6 +103,7 @@ class Bottombar @JvmOverloads constructor(
     }
 
     private class SavedState : BaseSavedState, Parcelable {
+
         var ssIsSearchMode: Boolean = false
 
         constructor(superState: Parcelable?) : super(superState)
@@ -128,7 +120,9 @@ class Bottombar @JvmOverloads constructor(
         override fun describeContents() = 0
 
         companion object CREATOR : Parcelable.Creator<SavedState> {
+
             override fun createFromParcel(parcel: Parcel) = SavedState(parcel)
+
             override fun newArray(size: Int): Array<SavedState?> = arrayOfNulls(size)
         }
     }
