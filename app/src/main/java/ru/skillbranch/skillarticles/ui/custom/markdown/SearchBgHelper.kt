@@ -16,13 +16,13 @@ import ru.skillbranch.skillarticles.ui.custom.spans.HeaderSpan
 import ru.skillbranch.skillarticles.ui.custom.spans.SearchFocusSpan
 import ru.skillbranch.skillarticles.ui.custom.spans.SearchSpan
 
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 class SearchBgHelper(
     context: Context,
     private val focusListener: ((Int, Int) -> Unit)? = null,
     mockDrawable: Drawable? = null
 ) {
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     constructor(
         context: Context,
         focusListener: ((Int, Int) -> Unit)
@@ -69,7 +69,6 @@ class SearchBgHelper(
     private val drawableRight: Drawable by lazy {
         mockDrawable ?: GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
-            cornerRadii = FloatArray(8).apply { fill(radius, 0, size) }
             cornerRadii = floatArrayOf(
                 0f, 0f,
                 radius, radius,
@@ -82,14 +81,8 @@ class SearchBgHelper(
     }
 
     private lateinit var render: SearchBgRender
-
-    private val singleLineRender: SearchBgRender by lazy {
-        SingleLineRender(padding, drawable)
-    }
-
-    private val multiLineRender: SearchBgRender by lazy {
-        MultiLineRender(padding, drawableLeft, drawableMiddle, drawableRight)
-    }
+    private val singleLineRender: SearchBgRender = SingleLineRender(padding, drawable)
+    private val multiLineRender: SearchBgRender = MultiLineRender(padding, drawableLeft, drawableMiddle, drawableRight)
 
     private lateinit var spans: Array<out SearchSpan>
     private lateinit var headerSpans: Array<out HeaderSpan>
