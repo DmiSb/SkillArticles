@@ -17,39 +17,46 @@ import ru.skillbranch.skillarticles.extensions.dpToIntPx
 class MarkdownTextView constructor(
     context: Context,
     fontSize: Float,
-    mockHelper: SearchBgHelper? = null
-) : TextView(context, null, 0), IMarkdownView {
+    mockHelper: SearchBgHelper?=null
+): TextView(context,null,0),IMarkdownView {
 
-    constructor(context: Context, fontSize: Float) : this(context, fontSize, null)
-
-    private val color: Int = context.attrValue(R.attr.colorOnBackground)
-    private val focusRect = Rect()
-
-    private val searchBgHelper: SearchBgHelper
-
-    override var fontSize: Float = fontSize
+    override var fontSize: Float=fontSize
+        //get() = fontSize
         set(value) {
-            textSize = value
-            field = value
+            textSize=value
+            field=value
         }
 
     override val spannableContent: Spannable
         get() = text as Spannable
 
-    init {
-        searchBgHelper = mockHelper ?: SearchBgHelper(context) { top, bottom ->
-            focusRect.set(0, top - context.dpToIntPx(56), width, bottom + context.dpToIntPx(56))
-            requestRectangleOnScreen(focusRect, false)  // show rect on view with animation
-        }
-        setTextColor(color)
-        textSize = fontSize
-        movementMethod = LinkMovementMethod.getInstance()
+    val color=context.attrValue(R.attr.colorOnBackground)
+    private  val focusRect= Rect()
+
+    private var searchBgHelper=SearchBgHelper(context=context) {top,bottom->
+        focusRect.set(0,top-context.dpToIntPx(56),width,bottom+context.dpToIntPx(56))
+
+        requestRectangleOnScreen(focusRect,false)
     }
 
-    override fun onDraw(canvas: Canvas) {
-        if (text is Spanned && layout != null) {
-            canvas.withTranslation(totalPaddingLeft.toFloat(), totalPaddingTop.toFloat()) {
-                searchBgHelper.draw(canvas, text as Spanned, layout)
+    init {
+        searchBgHelper=mockHelper ?: SearchBgHelper(context) {top,bottom->
+            focusRect.set(0,top-context.dpToIntPx(56),width,bottom+context.dpToIntPx(56))
+
+            requestRectangleOnScreen(focusRect,false)
+        }
+
+        //setBackgroundColor(Color.GREEN)
+        setTextColor(color)
+        textSize=fontSize
+        movementMethod=LinkMovementMethod.getInstance()
+    }
+
+    override fun onDraw(canvas: Canvas){
+        super.onDraw(canvas)
+        if (layout!=null && text is Spanned) {
+            canvas.withTranslation (totalPaddingLeft.toFloat(),totalPaddingTop.toFloat()) {
+                searchBgHelper.draw(canvas=canvas,text=text as Spanned,layout = layout)
             }
         }
         super.onDraw(canvas)
