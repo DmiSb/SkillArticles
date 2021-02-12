@@ -21,8 +21,11 @@ class Bottombar @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : ConstraintLayout(context, attrs, defStyleAttr), CoordinatorLayout.AttachedBehavior {
+    var isSearchMode = false
 
-    var isSearchMode: Boolean = false
+    override fun getBehavior(): CoordinatorLayout.Behavior<Bottombar> {
+        return BottombarBehavior()
+    }
 
     init {
         View.inflate(context, R.layout.layout_bottombar, this)
@@ -31,16 +34,14 @@ class Bottombar @JvmOverloads constructor(
         background = materialBg
     }
 
-    override fun getBehavior(): CoordinatorLayout.Behavior<*> {
-        return BottombarBehavior()
-    }
-
+    //save state
     override fun onSaveInstanceState(): Parcelable? {
         val savedState = SavedState(super.onSaveInstanceState())
         savedState.ssIsSearchMode = isSearchMode
         return savedState
     }
 
+    //restore state
     override fun onRestoreInstanceState(state: Parcelable) {
         super.onRestoreInstanceState(state)
         if (state is SavedState) {
@@ -53,7 +54,8 @@ class Bottombar @JvmOverloads constructor(
     fun setSearchState(search: Boolean) {
         if (isSearchMode == search || !isAttachedToWindow) return
         isSearchMode = search
-        if (isSearchMode) animateShowSearchPanel() else animateHideSearchPanel()
+        if (isSearchMode) animateShowSearchPanel()
+        else animateHideSearchPanel()
     }
 
     private fun animateHideSearchPanel() {
@@ -86,24 +88,20 @@ class Bottombar @JvmOverloads constructor(
 
     fun bindSearchInfo(searchCount: Int = 0, position: Int = 0) {
         if (searchCount == 0) {
-            tv_search_result.text = resources.getString(R.string.not_found)
+            tv_search_result.text = "Not found"
             btn_result_up.isEnabled = false
             btn_result_down.isEnabled = false
-        } else {
-            val resultText = "${position.inc()} of $searchCount"
-            tv_search_result.text = resultText
+        }else{
+            tv_search_result.text = "${position.inc()} of $searchCount"
             btn_result_up.isEnabled = true
             btn_result_down.isEnabled = true
         }
 
-        when (position) {
-            0 -> btn_result_up.isEnabled = false
-            searchCount - 1 -> btn_result_down.isEnabled = false
-        }
+        if (position == 0) btn_result_up.isEnabled = false
+        if (position == searchCount - 1) btn_result_down.isEnabled = false
     }
 
     private class SavedState : BaseSavedState, Parcelable {
-
         var ssIsSearchMode: Boolean = false
 
         constructor(superState: Parcelable?) : super(superState)
@@ -120,9 +118,7 @@ class Bottombar @JvmOverloads constructor(
         override fun describeContents() = 0
 
         companion object CREATOR : Parcelable.Creator<SavedState> {
-
             override fun createFromParcel(parcel: Parcel) = SavedState(parcel)
-
             override fun newArray(size: Int): Array<SavedState?> = arrayOfNulls(size)
         }
     }

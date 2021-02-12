@@ -29,9 +29,7 @@ class HeaderSpan constructor(
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     val linePadding = 0.4f
-
     private var originAscent = 0
-
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     val sizes = mapOf(
         1 to 2f,
@@ -44,7 +42,6 @@ class HeaderSpan constructor(
 
     var topExtraPadding = 0
     var bottomExtraPadding = 0
-
     lateinit var firstLineBounds: kotlin.ranges.IntRange
     lateinit var lastLineBounds: kotlin.ranges.IntRange
 
@@ -56,23 +53,25 @@ class HeaderSpan constructor(
         lineHeight: Int,
         fm: Paint.FontMetricsInt?
     ) {
+
         fm ?: return
 
         text as Spanned
         val spanStart = text.getSpanStart(this)
         val spanEnd = text.getSpanEnd(this)
 
-        if (spanStart == start) {
+        if(spanStart == start){
             originAscent = fm.ascent
             fm.ascent = (fm.ascent - marginTop).toInt()
             topExtraPadding = marginTop.toInt()
             firstLineBounds = start..end.dec()
-        } else {
+        }else{
             fm.ascent = originAscent
         }
 
-        // line break +1 character
-        if (spanEnd == end.dec()) {
+
+        //line break +1 character
+        if(spanEnd == end.dec()){
             val originDescent = fm.descent
             val originHeight = fm.descent - originAscent
             fm.descent = (originHeight * linePadding + marginBottom).toInt()
@@ -104,12 +103,12 @@ class HeaderSpan constructor(
         lineTop: Int, lineBaseline: Int, lineBottom: Int, text: CharSequence?, lineStart: Int,
         lineEnd: Int, isFirstLine: Boolean, layout: Layout?
     ) {
-
-        // for 1 or 2 level and last line
+        //for 1 or 2 level and last line
         if ((level == 1 || level == 2) && (text as Spanned).getSpanEnd(this) == lineEnd) {
             paint.forLine {
-                val lineHeight = (paint.descent() - paint.ascent()) * sizes.getOrElse(level) { 1f }
-                val lineOffset = lineBaseline + lineHeight * linePadding
+                val lh = (paint.descent() - paint.ascent()) * sizes.getOrElse(level) { 1f }
+                val lineOffset = lineBaseline + lh * linePadding
+
                 canvas.drawLine(
                     0f,
                     lineOffset,
@@ -119,7 +118,8 @@ class HeaderSpan constructor(
                 )
             }
         }
-        // canvas.drawFontLines(lineTop, lineBottom, lineBaseline, paint)
+
+//        canvas.drawFontLines(lineTop, lineBottom, lineBaseline, paint)
     }
 
     override fun getLeadingMargin(first: Boolean): Int {
@@ -148,47 +148,9 @@ class HeaderSpan constructor(
         lineBaseline: Int,
         paint: Paint
     ) {
-        // top font line
-        drawLine(0f,
-            top + 0f,
-            width + 0f,
-            top + 0f,
-            Paint().apply { color = Color.BLUE }
-        )
-
-        // bottom font line
-        drawLine(0f,
-            bottom + 0f,
-            width + 0f,
-            bottom + 0f,
-            Paint().apply { color = Color.GREEN }
-        )
-
-        // baseline
-        drawLine(
-            0f,
-            lineBaseline + 0f,
-            width + 0f,
-            lineBaseline + 0f,
-            Paint().apply { color = Color.RED }
-        )
-
-        // ascent
-        drawLine(
-            0f,
-            paint.ascent() + lineBaseline + 0f,
-            width + 0f,
-            paint.ascent() + lineBaseline + 0f,
-            Paint().apply { color = Color.CYAN }
-        )
-
-        // descent
-        drawLine(
-            0f,
-            paint.descent() + lineBaseline + 0f,
-            width + 0f,
-            paint.descent() + lineBaseline + 0f,
-            Paint().apply { color = Color.MAGENTA }
-        )
+        drawLine(0f, top + 0f, width + 0f, top + 0f, Paint().apply { color = Color.BLUE })
+        drawLine(0f, bottom + 0f, width + 0f, bottom + 0f, Paint().apply { color = Color.GREEN })
+        drawLine(0f,lineBaseline + 0f,width + 0f,lineBaseline + 0f,Paint().apply { color = Color.RED })
     }
+
 }

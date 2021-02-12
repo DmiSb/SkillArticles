@@ -4,43 +4,42 @@ import ru.skillbranch.skillarticles.data.local.PrefManager
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-/**
-Реализуй делегат PrefDelegate<T>(private val defaultValue: T) : ReadWriteProperty<PrefManager, T?>
-(ru.skillbranch.skillarticles.data.delegates.PrefDelegate) возвращающий значений примитивов (Boolean, String, Float, Int, Long)
+class PrefDelegate<T>(private val defaultValue: T)  {
+    private var value: T? = null
 
-Пример: var storedBoolean by PrefDelegate(false)
-var storedString by PrefDelegate("")
-var storedFloat by PrefDelegate(0f)
-var storedInt by PrefDelegate(0)
-var storedLong by PrefDelegate(0)
- */
-
-class PrefDelegate<T>(private val defaultValue: T) : ReadWriteProperty<PrefManager, T?> {
-
-    @Suppress("UNCHECKED_CAST")
-    override fun getValue(thisRef: PrefManager, property: KProperty<*>): T? {
-        return with(thisRef.preferences) {
-            when (defaultValue) {
-                is Boolean -> getBoolean(property.name, defaultValue)  as T
-                is String -> getString(property.name, defaultValue) as T
-                is Float -> getFloat(property.name, defaultValue) as T
-                is Int -> getInt(property.name, defaultValue) as T
-                is Long -> getLong(property.name, defaultValue) as T
-                else -> null
+    operator fun provideDelegate(thisRef: PrefManager, prop: KProperty<*>): ReadWriteProperty<PrefManager, T?> {
+        val key = prop.name
+        return object : ReadWriteProperty<PrefManager, T?> {
+            override fun getValue(thisRef: PrefManager, property: KProperty<*>): T? {
+                if (value == null) {
+                    @Suppress("UNCHECKED_CAST")
+                    value = when(defaultValue) {
+                        is Int -> thisRef.preferences.getInt(key, defaultValue as Int) as T
+                        is Long -> thisRef.preferences.getLong(key, defaultValue as Long) as T
+                        is Float -> thisRef.preferences.getFloat(key, defaultValue as Float) as T
+                        is String -> thisRef.preferences.getString(key, defaultValue as String) as T
+                        is Boolean -> thisRef.preferences.getBoolean(key, defaultValue as Boolean) as T
+                        else -> throw IllegalStateException("This type can not be stored into Preferences")
+                    }
+                }
+                return value
             }
-        }
-    }
 
-    override fun setValue(thisRef: PrefManager, property: KProperty<*>, value: T?) {
-        with(thisRef.preferences.edit()) {
-            when (value) {
-                is Boolean -> putBoolean(property.name, value)
-                is String -> putString(property.name, value).apply()
-                is Float -> putFloat(property.name, value)
-                is Int -> putInt(property.name, value)
-                is Long -> putLong(property.name, value)
+            override fun setValue(thisRef: PrefManager, property: KProperty<*>, value: T?) {
+                with(thisRef.preferences.edit()) {
+                    when (value) {
+                        is String -> putString(key, value)
+                        is Int -> putInt(key, value)
+                        is Boolean -> putBoolean(key, value)
+                        is Long -> putLong(key, value)
+                        is Float -> putFloat(key, value)
+                        else -> throw IllegalStateException("Only primitive types can be stored into Preferences")
+                    }
+                    apply()
+                }
+                this@PrefDelegate.value = value
             }
-            apply()
+
         }
     }
 }

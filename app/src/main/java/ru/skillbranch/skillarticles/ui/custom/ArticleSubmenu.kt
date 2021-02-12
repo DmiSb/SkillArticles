@@ -16,9 +16,6 @@ import ru.skillbranch.skillarticles.extensions.dpToPx
 import ru.skillbranch.skillarticles.ui.custom.behaviors.SubmenuBehavior
 import kotlin.math.hypot
 
-/**
- * Custom Sub menu
- */
 class ArticleSubmenu @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -30,9 +27,14 @@ class ArticleSubmenu @JvmOverloads constructor(
 
     init {
         View.inflate(context, R.layout.layout_submenu, this)
+        //add material bg for handle elevation and color surface
         val materialBg = MaterialShapeDrawable.createWithElevationOverlay(context)
         materialBg.elevation = elevation
         background = materialBg
+    }
+
+    override fun getBehavior(): CoordinatorLayout.Behavior<*> {
+        return SubmenuBehavior()
     }
 
     fun open() {
@@ -77,18 +79,14 @@ class ArticleSubmenu @JvmOverloads constructor(
         anim.start()
     }
 
-    /**
-     * Save state
-     */
+    //save state
     override fun onSaveInstanceState(): Parcelable? {
         val savedState = SavedState(super.onSaveInstanceState())
         savedState.ssIsOpen = isOpen
         return savedState
     }
 
-    /**
-     * Restore state
-     */
+    //restore state
     override fun onRestoreInstanceState(state: Parcelable) {
         super.onRestoreInstanceState(state)
         if (state is SavedState) {
@@ -117,10 +115,6 @@ class ArticleSubmenu @JvmOverloads constructor(
             override fun createFromParcel(parcel: Parcel) = SavedState(parcel)
             override fun newArray(size: Int): Array<SavedState?> = arrayOfNulls(size)
         }
-    }
-
-    override fun getBehavior(): CoordinatorLayout.Behavior<*> {
-        return SubmenuBehavior()
     }
 
 }

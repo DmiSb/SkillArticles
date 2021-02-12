@@ -3,72 +3,57 @@ package ru.skillbranch.skillarticles.data.repositories
 import java.util.regex.Pattern
 
 object MarkdownParser {
-
-    // Group regex
-    private const val UNORDERED_LIST_ITEM_GROUP = "(^[*+-] .+)"
+    //group regex
+    private const val UNORDERED_LIST_ITEM_GROUP = "(^[*+-] .+$)"
     private const val HEADER_GROUP = "(^#{1,6} .+?$)"
     private const val QUOTE_GROUP = "(^> .+?$)"
     private const val ITALIC_GROUP = "((?<!\\*)\\*[^*].*?[^*]?\\*(?!\\*)|(?<!_)_[^_].*?[^_]?_(?!_))"
     private const val BOLD_GROUP =
         "((?<!\\*)\\*{2}[^*].*?[^*]?\\*{2}(?!\\*)|(?<!_)_{2}[^_].*?[^_]?_{2}(?!_))"
-    private const val STRIKE_GROUP = "((?<!~)~{2}[^~].*?[^~]?~{2}(?!~))"
+    private const val STRIKE_GROUP = "(~~.+?~~)"
     private const val RULE_GROUP = "(^[-_*]{3}$)"
     private const val INLINE_GROUP = "((?<!`)`[^`\\s].*?[^`\\s]?`(?!`))"
-    private const val LINK_GROUP = "(\\[[^\\[\\]]*?]\\(.+?\\)|^[*?]\\(.*?\\))"
-    private const val ORDERED_LIST_ITEM_GROUP = "(^\\d+\\. .+\$)"
-    private const val BLOCK_CODE_GROUP = "(^```[\\s\\S]+?```$)"
-    private const val IMAGE_GROUP = "(^!\\[[^\\[\\]]*?\\]\\(.*?\\)$)"
+    private const val LINK_GROUP = "(\\[[^\\[\\]]*?]\\(.+?\\)|^\\[*?]\\(.*?\\))"
+    private const val BLOCK_CODE_GROUP = "(^```[\\s\\S]+?```$)" //group 10
+    private const val ORDER_LIST_GROUP = "(^\\d{1,2}\\.\\s.+?$)" //group 11
+    private const val IMAGE_GROUP = "(^!\\[[^\\[\\]]*?\\]\\(.*?\\)$)" //group 12
 
-    // Result regex
+    //result regex
     private const val MARKDOWN_GROUPS = "$UNORDERED_LIST_ITEM_GROUP|$HEADER_GROUP|$QUOTE_GROUP" +
-            "|$ITALIC_GROUP|$BOLD_GROUP|$STRIKE_GROUP|$RULE_GROUP" +
-            "|$INLINE_GROUP|$LINK_GROUP|$ORDERED_LIST_ITEM_GROUP" +
-            "|$BLOCK_CODE_GROUP|$IMAGE_GROUP"
+            "|$ITALIC_GROUP|$BOLD_GROUP|$STRIKE_GROUP|$RULE_GROUP|$INLINE_GROUP|$LINK_GROUP" +
+            "|$BLOCK_CODE_GROUP|$ORDER_LIST_GROUP|$IMAGE_GROUP"
 
-    private val elementsPattern by lazy {
-        Pattern.compile(MARKDOWN_GROUPS, Pattern.MULTILINE)
-    }
+    private val elementsPattern by lazy { Pattern.compile(MARKDOWN_GROUPS, Pattern.MULTILINE) }
 
     /**
-     * Parse text with markdown characters to text elements
-     *
-     * @param string text with markdown characters
-     * @return text elements
+     * parse markdown text to elements
      */
     fun parse(string: String): List<MarkdownElement> {
         val elements = mutableListOf<Element>()
         elements.addAll(findElements(string))
-
         return elements.fold(mutableListOf()) { acc, element ->
             val last = acc.lastOrNull()
             when (element) {
-                is Element.Image -> {
-                    acc.add(
-                        MarkdownElement.Image(
-                            element,
-                            last?.bounds?.second ?: 0
-                        )
+                is Element.Image -> acc.add(
+                    MarkdownElement.Image(
+                        element,
+                        last?.bounds?.second ?: 0
                     )
-                }
-                is Element.BlockCode -> {
-                    acc.add(
-                        MarkdownElement.Scroll(
-                            element,
-                            last?.bounds?.second ?: 0
-                        )
+                )
+                is Element.BlockCode -> acc.add(
+                    MarkdownElement.Scroll(
+                        element,
+                        last?.bounds?.second ?: 0
                     )
-                }
+                )
                 else -> {
-                    if (last is MarkdownElement.Text) {
-                        last.elements.add(element)
-                    } else {
-                        acc.add(
-                            MarkdownElement.Text(
-                                mutableListOf(element),
-                                last?.bounds?.second ?: 0
-                            )
+                    if (last is MarkdownElement.Text) last.elements.add(element)
+                    else acc.add(
+                        MarkdownElement.Text(
+                            mutableListOf(element),
+                            last?.bounds?.second ?: 0
                         )
-                    }
+                    )
                 }
             }
             acc
@@ -76,199 +61,351 @@ object MarkdownParser {
     }
 
     /**
-     * Find markdown elements in markdown text
-     *
-     * @param string markdown text
-     * @return markdown elements
+     * clear markdown text to string without markdown characters
+     */
+    fun clear(string: String?): String? {
+        string ?: return null
+        var clearString = ""
+        val matcher = elementsPattern.matcher(string)
+        var lastStartIndex = 0
+
+        loop@ while (matcher.find(lastStartIndex)) {
+            val startIndex = matcher.start()
+            val endIndex = matcher.end()
+            // we found a mark
+            if (lastStartIndex < startIndex) {
+                // check what was before the mark
+                clearString += string.substring(lastStartIndex, startIndex)
+            }
+            // check what kind of mark this was
+            var text: String
+            val groups = 1..11
+            var group = -1
+            for (gr in groups) {
+                if (matcher.group(gr) != null) {
+                    group = gr
+                    break
+                }
+            }
+
+            when (group) {
+                //NOT FOUND -> BREAK
+                -1 -> break@loop
+                //1 -> LIST GROUP
+                1 -> {
+                    text = string.subSequence(startIndex.plus(2), endIndex).toString()
+                    val subs =
+                        clear(text)
+                    clearString += if (subs.isNullOrEmpty()) text else subs
+
+                    lastStartIndex = endIndex
+                }
+
+                //2 -> HEADER GROUP
+                2 -> {
+                    val reg = "^#{1,6}".toRegex().find(string.substring(startIndex, endIndex))
+                    val level = reg!!.value.length
+
+                    clearString += string.substring(startIndex + level.inc(), endIndex)
+                    lastStartIndex = endIndex
+                }
+
+                //3 -> QUOTE_GROUP
+                3 -> {
+                    text = string.substring(startIndex.plus(2), endIndex)
+                    val subs =
+                        clear(text)
+                    clearString += if (subs.isNullOrEmpty()) text else subs
+                    lastStartIndex = endIndex
+                }
+
+                //4 -> ITALIC_GROUP
+                4 -> {
+                    text = string.substring(startIndex.inc(), endIndex.dec())
+                    val subs =
+                        clear(text)
+                    clearString += if (subs.isNullOrEmpty()) text else subs
+                    lastStartIndex = endIndex
+                }
+
+                //5 -> BOLD_GROUP
+                5 -> {
+                    text = string.substring(startIndex.plus(2), endIndex.plus(-2))
+                    val subs =
+                        clear(text)
+                    clearString += if (subs.isNullOrEmpty()) text else subs
+                    lastStartIndex = endIndex
+                }
+
+                //6 -> STRIKE_GROUP
+                6 -> {
+                    text = string.substring(startIndex.plus(2), endIndex.plus(-2))
+                    val subs =
+                        clear(text)
+                    clearString += if (subs.isNullOrEmpty()) text else subs
+                    lastStartIndex = endIndex
+                }
+
+                //7 -> RULE_GROUP
+                7 -> {
+                    clearString += " "
+                    lastStartIndex = endIndex
+                }
+
+                //8 -> INLINE CODE GROUP
+                8 -> {
+                    text = string.substring(startIndex.inc(), endIndex.dec())
+                    clearString += text
+                    lastStartIndex = endIndex
+                }
+
+                //9 -> LINK_GROUP
+                9 -> {
+                    text = string.substring(startIndex, endIndex)
+                    val (title: String, _) = "\\[(.*)]\\((.*)\\)".toRegex().find(text)!!.destructured
+                    clearString += title
+                    lastStartIndex = endIndex
+                }
+
+
+                //10 -> BLOCK CODE
+                10 -> {
+                    text = string.subSequence(startIndex.plus(3), endIndex.plus(-3)).toString()
+                    clearString += text
+                    lastStartIndex = endIndex
+                }
+
+                //11 -> ORDERED LIST
+                11 -> {
+                    val reg = "(^\\d+)".toRegex().find(string.substring(startIndex, endIndex))
+                    val order = reg!!.value
+                    text =
+                        string.subSequence(startIndex.plus(order.length + 2), endIndex).toString()
+                    val subs =
+                        clear(text)
+                    clearString += if (subs.isNullOrEmpty()) text else subs
+                    lastStartIndex = endIndex
+                }
+            }
+        }
+
+        // check if there's any more text left
+        if (lastStartIndex < string.length) {
+            clearString += string.substring(lastStartIndex, string.length)
+        }
+
+        return clearString
+    }
+
+    /**
+     * find markdown elements in markdown text
      */
     private fun findElements(string: CharSequence): List<Element> {
         val parents = mutableListOf<Element>()
         val matcher = elementsPattern.matcher(string)
         var lastStartIndex = 0
 
-        loop@
-        while (matcher.find(lastStartIndex)) {
+        loop@ while (matcher.find(lastStartIndex)) {
             val startIndex = matcher.start()
             val endIndex = matcher.end()
 
-            // if something is found then everything before – TEXT
+            //if something is found then everything before - TEXT
             if (lastStartIndex < startIndex) {
-                parents.add(Element.Text(string.subSequence(lastStartIndex, startIndex)))
+                parents.add(
+                    Element.Text(
+                        string.subSequence(
+                            lastStartIndex,
+                            startIndex
+                        )
+                    )
+                )
             }
 
+            //found text
             var text: CharSequence
 
-            // groups range info
+            //groups range for iterate by groups
             val groups = 1..12
             var group = -1
-
-            for (currGroup in groups) {
-                if (matcher.group(currGroup) != null) {
-                    group = currGroup
+            for (gr in groups) {
+                if (matcher.group(gr) != null) {
+                    group = gr
                     break
                 }
             }
 
             when (group) {
-                // NOT FOUND
+                //NOT FOUND -> BREAK
                 -1 -> break@loop
 
-                // UNORDERED LIST
+                //UNORDERED LIST
                 1 -> {
-                    // text without "*. "
+                    //text without "*. "
                     text = string.subSequence(startIndex.plus(2), endIndex)
 
-                    // find inner
-                    val subElements = findElements(text)
-                    val element = Element.UnorderedListItem(text, subElements)
+                    //find inner elements
+                    val subs =
+                        findElements(
+                            text
+                        )
+                    val element =
+                        Element.UnorderedListItem(
+                            text,
+                            subs
+                        )
                     parents.add(element)
 
+                    //next find start from position "endIndex" (last regex character)
                     lastStartIndex = endIndex
                 }
 
-                // HEADER
+                //HEADER
                 2 -> {
                     val reg = "^#{1,6}".toRegex().find(string.subSequence(startIndex, endIndex))
                     val level = reg!!.value.length
 
-                    // text without "{#} "
+                    //text without "{#} "
                     text = string.subSequence(startIndex.plus(level.inc()), endIndex)
 
-                    val element = Element.Header(level, text)
+                    val element =
+                        Element.Header(level, text)
                     parents.add(element)
-
                     lastStartIndex = endIndex
                 }
 
-                // QUOTE
+                //QUOTE
                 3 -> {
-                    // text without "> "
+                    //text without "> "
                     text = string.subSequence(startIndex.plus(2), endIndex)
-
-                    val subElements = findElements(text)
-                    val element = Element.Quote(text, subElements)
+                    val subelements =
+                        findElements(
+                            text
+                        )
+                    val element = Element.Quote(
+                        text,
+                        subelements
+                    )
                     parents.add(element)
-
                     lastStartIndex = endIndex
                 }
 
-                // ITALIC
+                //ITALIC
                 4 -> {
-                    // text without "*{}*"
+                    //text without "*{}*"
                     text = string.subSequence(startIndex.inc(), endIndex.dec())
-
-                    val subElements = findElements(text)
-                    val element = Element.Italic(text, subElements)
+                    val subelements =
+                        findElements(
+                            text
+                        )
+                    val element = Element.Italic(
+                        text,
+                        subelements
+                    )
                     parents.add(element)
-
                     lastStartIndex = endIndex
                 }
 
-                // BOLD
+                //BOLD
                 5 -> {
-                    // text without "**{}**"
-                    text = string.subSequence(startIndex.plus(2), endIndex.minus(2))
-
-                    val subElements = findElements(text)
-                    val element = Element.Bold(text, subElements)
+                    //text without "**{}**"
+                    text = string.subSequence(startIndex.plus(2), endIndex.plus(-2))
+                    val subelements =
+                        findElements(
+                            text
+                        )
+                    val element = Element.Bold(
+                        text,
+                        subelements
+                    )
                     parents.add(element)
-
                     lastStartIndex = endIndex
                 }
 
-                // STRIKE
+                //STRIKE
                 6 -> {
-                    // text without "~~{}~~"
-                    text = string.subSequence(startIndex.plus(2), endIndex.minus(2))
-
-                    val subElements = findElements(text)
-                    val element = Element.Strike(text, subElements)
+                    //text without "~~{}~~"
+                    text = string.subSequence(startIndex.plus(2), endIndex.plus(-2))
+                    val subelements =
+                        findElements(
+                            text
+                        )
+                    val element = Element.Strike(
+                        text,
+                        subelements
+                    )
                     parents.add(element)
-
                     lastStartIndex = endIndex
                 }
 
-                // RULE
+                //RULE
                 7 -> {
-                    // text without "***" insert empty character
-                    text = " " + string.subSequence(startIndex.plus(3), endIndex)
-
-                    val element = Element.Rule(text)
+                    //text without "***" insert empty character
+                    val element = Element.Rule()
                     parents.add(element)
-
                     lastStartIndex = endIndex
                 }
 
-                // INLINE
+                //RULE
                 8 -> {
-                    // text without "`{}`"
+                    //text without "`{}`"
                     text = string.subSequence(startIndex.inc(), endIndex.dec())
-
-                    val subElements = findElements(text)
-                    val element = Element.InlineCode(text, subElements)
+                    val element =
+                        Element.InlineCode(text)
                     parents.add(element)
-
                     lastStartIndex = endIndex
                 }
 
-                // LINK
+                //LINK
                 9 -> {
-                    // full text for regex
+                    //full text for regex
                     text = string.subSequence(startIndex, endIndex)
-                    val (title: String, link: String) = "\\[(.*)]\\((.*)\\)"
-                        .toRegex()
-                        .find(text)!!
-                        .destructured
-
-                    val element = Element.Link(link, title)
+                    val (title: String, link: String) = "\\[(.*)]\\((.*)\\)".toRegex().find(text)!!.destructured
+                    val element =
+                        Element.Link(link, title)
                     parents.add(element)
-
                     lastStartIndex = endIndex
                 }
-
-                // ORDERED LIST
+                //10 -> BLOCK CODE
                 10 -> {
-                    val reg = "^(^\\d+\\.)"
-                        .toRegex()
-                        .find(string.subSequence(startIndex, endIndex))
-                    val order = reg!!.value
-
-                    // text without "X. "
-                    text = string.subSequence(startIndex.plus(order.length.inc()), endIndex)
-
-                    val subs = findElements(text)
-                    val element = Element.OrderedListItem(order, text.toString(), subs)
-                    parents.add(element)
-
-                    lastStartIndex = endIndex
-                }
-
-                // BLOCK CODE
-                11 -> {
                     text = string.subSequence(startIndex.plus(3), endIndex.plus(-3)).toString()
-
                     val element = Element.BlockCode(text)
                     parents.add(element)
-
                     lastStartIndex = endIndex
                 }
 
-                // IMAGE GROUP
+                //11 -> NUMERIC LIST
+                11 -> {
+                    val reg = "(^\\d{1,2}.)".toRegex().find(string.substring(startIndex, endIndex))
+                    val order = reg!!.value
+                    text =
+                        string.subSequence(startIndex.plus(order.length.inc()), endIndex).toString()
+
+                    val subs = findElements(text)
+                    val element =
+                        Element.OrderedListItem(
+                            order,
+                            text.toString(),
+                            subs
+                        )
+                    parents.add(element)
+                    lastStartIndex = endIndex
+                }
+
+                //12 -> IMAGE GROUP
                 12 -> {
                     text = string.subSequence(startIndex, endIndex)
-                    val (alt, url, title) = "^!\\[([^\\[\\]]*?)?]\\((.*?) \"(.*?)\"\\)$"
-                        .toRegex()
-                        .find(text)!!
-                        .destructured
+                    val (alt, url, title) = "^!\\[([^\\[\\]]*?)?]\\((.*?) \"(.*?)\"\\)$".toRegex()
+                        .find(text)!!.destructured
 
-                    val element = Element.Image(url, alt, title)
+                    val element = Element.Image(url, if (alt.isBlank()) null else alt, title)
                     parents.add(element)
-
                     lastStartIndex = endIndex
                 }
             }
+
         }
 
+        // Дополнительная проверка, не забыли ли добавить остаток текста
         if (lastStartIndex < string.length) {
             val text = string.subSequence(lastStartIndex, string.length)
             parents.add(Element.Text(text))
@@ -279,23 +416,18 @@ object MarkdownParser {
 }
 
 sealed class MarkdownElement {
-
     abstract val offset: Int
-
     val bounds: Pair<Int, Int> by lazy {
-        when (this) {
+        when(this){
             is Text -> {
-                val end = elements.fold(offset) { acc, element ->
-                    acc + element.spread().map { it.text.length }.sum()
+                val end = elements.fold(offset){ acc, el ->
+                    acc + el.spread().map { it.text.length }.sum()
                 }
                 offset to end
             }
-            is Image -> {
-                offset to image.text.length + offset
-            }
-            is Scroll -> {
-                offset to blockCode.text.length + offset
-            }
+
+            is Image -> offset to image.text.length + offset
+            is Scroll -> offset to blockCode.text.length + offset
         }
     }
 
@@ -315,10 +447,8 @@ sealed class MarkdownElement {
     ) : MarkdownElement()
 }
 
-sealed class Element {
-
+sealed class Element() {
     abstract val text: CharSequence
-
     abstract val elements: List<Element>
 
     data class Text(
@@ -344,17 +474,17 @@ sealed class Element {
 
     data class Italic(
         override val text: CharSequence,
-        override val elements: List<Element>
+        override val elements: List<Element> = emptyList()
     ) : Element()
 
     data class Bold(
         override val text: CharSequence,
-        override val elements: List<Element>
+        override val elements: List<Element> = emptyList()
     ) : Element()
 
     data class Strike(
         override val text: CharSequence,
-        override val elements: List<Element>
+        override val elements: List<Element> = emptyList()
     ) : Element()
 
     data class Rule(
@@ -390,15 +520,13 @@ sealed class Element {
         override val text: CharSequence,
         override val elements: List<Element> = emptyList()
     ) : Element()
+
 }
 
 private fun Element.spread(): List<Element> {
     val elements = mutableListOf<Element>()
-    if (this.elements.isNotEmpty()) {
-        elements.addAll(this.elements.spread())
-    } else {
-        elements.add(this)
-    }
+    if (this.elements.isNotEmpty()) elements.addAll(this.elements.spread())
+    else elements.add(this)
     return elements
 }
 
@@ -411,11 +539,8 @@ private fun List<Element>.spread(): List<Element> {
 private fun Element.clearContent(): String {
     return StringBuilder().apply {
         val element = this@clearContent
-        if (element.elements.isEmpty()) {
-            append(element.text)
-        } else {
-            element.elements.forEach { append(it.clearContent()) }
-        }
+        if (element.elements.isEmpty()) append(element.text)
+        else element.elements.forEach { append(it.clearContent()) }
     }.toString()
 }
 

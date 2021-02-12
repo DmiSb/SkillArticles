@@ -5,9 +5,6 @@ import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.*
 
-/**
- * Base ViewModel
- */
 abstract class BaseViewModel<T : IViewModelState>(initState: T) : ViewModel() {
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     val notifications = MutableLiveData<Event<Notify>>()
@@ -23,7 +20,7 @@ abstract class BaseViewModel<T : IViewModelState>(initState: T) : ViewModel() {
     }
 
     /***
-     * Getter для получения not null значения текущего состояния ViewModel
+     * getter для получения not null значения текущего состояния ViewModel
      */
     @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     val currentState
@@ -31,7 +28,7 @@ abstract class BaseViewModel<T : IViewModelState>(initState: T) : ViewModel() {
 
 
     /***
-     * Лямбда выражение принимает в качестве аргумента текущее состояние и возвращает
+     * лямбда выражение принимает в качестве аргумента текущее состояние и возвращает
      * модифицированное состояние, которое присваивается текущему состоянию
      */
     @UiThread
@@ -41,7 +38,7 @@ abstract class BaseViewModel<T : IViewModelState>(initState: T) : ViewModel() {
     }
 
     /***
-     * Функция для создания уведомления пользователя о событии (событие обрабатывается только один раз)
+     * функция для создания уведомления пользователя о событии (событие обрабатывается только один раз)
      * соответсвенно при изменении конфигурации и пересоздании Activity уведомление не будет вызвано
      * повторно
      */
@@ -51,7 +48,7 @@ abstract class BaseViewModel<T : IViewModelState>(initState: T) : ViewModel() {
     }
 
     /***
-     * Более компактная форма записи observe() метода LiveData принимает последним аргумент лямбда
+     * более компактная форма записи observe() метода LiveData принимает последним аргумент лямбда
      * выражение обрабатывающее изменение текущего стостояния
      */
     fun observeState(owner: LifecycleOwner, onChanged: (newState: T) -> Unit) {
@@ -59,7 +56,7 @@ abstract class BaseViewModel<T : IViewModelState>(initState: T) : ViewModel() {
     }
 
     /***
-     * Более компактная форма записи observe() метода LiveData вызывает лямбда выражение обработчик
+     * более компактная форма записи observe() метода LiveData вызывает лямбда выражение обработчик
      * только в том случае если уведомление не было уже обработанно ранее,
      * реализует данное поведение с помощью EventObserver
      */
@@ -68,7 +65,7 @@ abstract class BaseViewModel<T : IViewModelState>(initState: T) : ViewModel() {
     }
 
     /***
-     * Функция принимает источник данных и лямбда выражение обрабатывающее поступающие данные источника
+     * функция принимает источник данных и лямбда выражение обрабатывающее поступающие данные источника
      * лямбда принимает новые данные и текущее состояние ViewModel в качестве аргументов,
      * изменяет его и возвращает модифицированное состояние, которое устанавливается как текущее
      */
@@ -81,37 +78,22 @@ abstract class BaseViewModel<T : IViewModelState>(initState: T) : ViewModel() {
         }
     }
 
-    /**
-     * Сохраняем текущий стейт
-     */
     fun saveState(outState: Bundle){
         currentState.save(outState)
     }
 
-    /**
-     * Восстанавливаем текущий стейт
-     */
     @Suppress("UNCHECKED_CAST")
-    fun restoreState(savedState:Bundle){
+    fun restoreState(savedState: Bundle){
         state.value = currentState.restore(savedState) as T
     }
+
 }
 
-/*@Suppress("UNCHECKED_CAST")
-class ViewModelFactory(private val params: String) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ArticleViewModel::class.java)) {
-            return ArticleViewModel(params) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}*/
-
 class Event<out E>(private val content: E) {
-    private var hasBeenHandled = false
+    var hasBeenHandled = false
 
     /***
-     * Возвращает контент который еще не был обработан иначе null
+     * возвращает контент который еще не был обработан иначе null
      */
     fun getContentIfNotHandled(): E? {
         return if (hasBeenHandled) null
@@ -139,18 +121,20 @@ class EventObserver<E>(private val onEventUnhandledContent: (E) -> Unit) : Obser
     }
 }
 
-sealed class Notify(val message: String) {
-    data class TextMessage(val msg: String) : Notify(msg)
+sealed class Notify {
+    abstract val message: String
+
+    data class TextMessage(override val message: String) : Notify()
 
     data class ActionMessage(
-        val msg: String,
+        override val message: String,
         val actionLabel: String,
-        val actionHandler: () -> Unit
-    ) : Notify(msg)
+        val actionHandler: (() -> Unit)
+    ) : Notify()
 
     data class ErrorMessage(
-        val msg: String,
+        override val message: String,
         val errLabel: String?,
         val errHandler: (() -> Unit)?
-    ) : Notify(msg)
+    ) : Notify()
 }
