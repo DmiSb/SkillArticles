@@ -22,16 +22,9 @@ class RootActivity : BaseActivity<RootViewModel>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         val appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.nav_articles,
-                R.id.nav_bookmarks,
-                R.id.nav_transcriptions,
-                R.id.nav_profile
-            )
+            setOf(R.id.nav_articles, R.id.nav_bookmarks, R.id.nav_transcriptions, R.id.nav_profile)
         )
-
         setupActionBarWithNavController(navController, appBarConfiguration)
         nav_view.setOnNavigationItemSelectedListener {
             viewModel.navigate(NavigationCommand.To(it.itemId))
@@ -39,7 +32,7 @@ class RootActivity : BaseActivity<RootViewModel>() {
         }
 
         navController.addOnDestinationChangedListener { controller, destination, arguments ->
-            if (viewModel.currentState.isAuth && destination.id == R.id.nav_auth) {
+           if (viewModel.currentState.isAuth && destination.id == R.id.nav_auth) {
                 controller.popBackStack()
                 viewModel.navigate(NavigationCommand.To(R.id.nav_profile, arguments))
             }

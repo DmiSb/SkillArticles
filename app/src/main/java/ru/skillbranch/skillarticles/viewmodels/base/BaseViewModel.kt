@@ -52,9 +52,6 @@ abstract class BaseViewModel<T : IViewModelState>(private val handleState: Saved
         notifications.value = Event(content)
     }
 
-    /***
-     *
-     */
     open fun navigate(navigationCommand: NavigationCommand) {
         navigation.value = Event(navigationCommand)
     }

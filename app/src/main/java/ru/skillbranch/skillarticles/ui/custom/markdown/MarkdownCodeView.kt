@@ -15,7 +15,6 @@ import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.annotation.ColorInt
-import androidx.annotation.VisibleForTesting
 import androidx.core.view.setPadding
 import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.extensions.attrValue
@@ -41,16 +40,11 @@ class MarkdownCodeView private constructor(
 
     private lateinit var codeString: CharSequence
 
-    //views
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val iv_copy: ImageView
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val iv_switch: ImageView
+    private val iv_copy: ImageView
+    private val iv_switch: ImageView
     private val tv_codeView: MarkdownTextView
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    val sv_scroll: HorizontalScrollView
+    private val sv_scroll: HorizontalScrollView
 
-    //colors
     @ColorInt
     private val darkSurface: Int = context.attrValue(R.attr.darkSurfaceColor)
     @ColorInt
@@ -60,7 +54,6 @@ class MarkdownCodeView private constructor(
     @ColorInt
     private val lightOnSurface: Int = context.attrValue(R.attr.lightOnSurfaceColor)
 
-    //sizes
     private val iconSize = context.dpToIntPx(12)
     private val radius = context.dpToPx(8)
     private val padding = context.dpToIntPx(8)
@@ -68,7 +61,6 @@ class MarkdownCodeView private constructor(
     private val textExtraPadding = context.dpToIntPx(80)
     private val scrollBarHeight = context.dpToIntPx(2)
 
-    //for layout
     private var isSingleLine = false
     private var isDark = false
     private var isManual = false
@@ -144,8 +136,7 @@ class MarkdownCodeView private constructor(
         }
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
-    public override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         var usedHeight = 0
         val width = getDefaultSize(suggestedMinimumWidth, widthMeasureSpec)
         measureChild(sv_scroll, widthMeasureSpec, heightMeasureSpec)
@@ -155,8 +146,7 @@ class MarkdownCodeView private constructor(
         setMeasuredDimension(width, usedHeight)
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
-    public override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
+    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         val usedHeight = paddingTop
         val bodyWidth = r - l - paddingLeft - paddingRight
         val left = paddingLeft

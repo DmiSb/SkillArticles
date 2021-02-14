@@ -13,7 +13,7 @@ import ru.skillbranch.skillarticles.R
 import ru.skillbranch.skillarticles.extensions.attrValue
 import ru.skillbranch.skillarticles.extensions.dpToIntPx
 
-@SuppressLint("ViewConstructor")
+@SuppressLint("ViewConstructor", "AppCompatCustomView")
 class MarkdownTextView constructor(
     context: Context,
     fontSize: Float,
@@ -50,7 +50,7 @@ class MarkdownTextView constructor(
 
     override fun onDraw(canvas: Canvas) {
         if (text is Spanned && layout != null) {
-            canvas.withTranslation {
+            canvas.withTranslation(totalPaddingStart.toFloat(), totalPaddingTop.toFloat()) {
                 searchBgHelper.draw(canvas, text as Spanned, layout)
             }
         }
