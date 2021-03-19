@@ -2,13 +2,16 @@ package ru.skillbranch.skillarticles.ui.articles
 
 import android.view.View
 import android.view.ViewGroup
+import androidx.paging.PagedListAdapter
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import ru.skillbranch.skillarticles.data.ArticleItemData
+import ru.skillbranch.skillarticles.data.models.ArticleItemData
 import ru.skillbranch.skillarticles.ui.custom.ArticleItemView
 
-class ArticlesAdapter(private val listener: (ArticleItemData) -> Unit) : ListAdapter<ArticleItemData, ArticleVH>(ArticleDiffCallback()) {
+class ArticlesAdapter(
+    private val listener: (ArticleItemData) -> Unit
+) : PagedListAdapter<ArticleItemData, ArticleVH>(ArticleDiffCallback()) {
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ArticleVH {
         val containerView = ArticleItemView(parent.context)
         return ArticleVH(containerView)
@@ -29,9 +32,16 @@ class ArticleDiffCallback: DiffUtil.ItemCallback<ArticleItemData>() {
     }
 }
 
-class ArticleVH(private val containerView: View): RecyclerView.ViewHolder(containerView) {
-    fun bind(item: ArticleItemData, listener: (ArticleItemData) -> Unit) {
-        (containerView as ArticleItemView).bind(item)
+class ArticleVH(
+    private val containerView: View
+): RecyclerView.ViewHolder(containerView) {
+
+    fun bind(
+        item : ArticleItemData?,
+        listener:  (ArticleItemData) -> Unit
+    ) {
+        // if use place holder item may be null
+        (containerView as ArticleItemView).bind(item!!)
         itemView.setOnClickListener { listener(item) }
     }
 }
