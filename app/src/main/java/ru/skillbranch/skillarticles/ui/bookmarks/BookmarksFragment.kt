@@ -54,7 +54,7 @@ class BookmarksFragment : BaseFragment<BookmarksViewModel>() {
             item.date
         )
         viewModel.navigate(NavigationCommand.To(action.actionId, action.arguments))
-    })
+    }, handleToggleBookmark )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

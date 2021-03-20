@@ -35,7 +35,7 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
     val iv_comments: ImageView
     val tv_comments_count: TextView
     val tv_read_duration: TextView
-    val iv_bookmark: ImageView
+    val iv_bookmark: CheckableImageView
 
     val padding = context.dpToIntPx(16)
     val defaultMargin = context.dpToIntPx(8)
@@ -98,12 +98,14 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
         addView(iv_likes)
 
         tv_likes_count = TextView(context).apply {
+            id = R.id.tv_likes_count
             textSize = 12f
             setTextColor(grayColor)
         }
         addView(tv_likes_count)
 
         iv_comments = ImageView(context).apply {
+            id = R.id.iv_comments
             layoutParams = LayoutParams(iconSize, iconSize)
             imageTintList = ColorStateList.valueOf(grayColor)
             setImageResource(R.drawable.ic_insert_comment_black_24dp)
@@ -111,6 +113,7 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
         addView(iv_comments)
 
         tv_comments_count = TextView(context).apply {
+            id = R.id.tv_comments_count
             textSize = 12f
             setTextColor(grayColor)
         }
@@ -123,7 +126,8 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
         }
         addView(tv_read_duration)
 
-        iv_bookmark = ImageView(context).apply {
+        iv_bookmark = CheckableImageView(context).apply {
+            id = R.id.iv_bookmark
             layoutParams = LayoutParams(iconSize, iconSize)
             imageTintList = ColorStateList.valueOf(grayColor)
             setImageResource(R.drawable.bookmark_states)
@@ -216,7 +220,7 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
         iv_bookmark.layout(paddingLeft + bodyWidth - iconSize, currentHeight - fontDiff, paddingLeft + bodyWidth, currentHeight + iconSize - fontDiff)
     }
 
-    fun bind(item: ArticleItemData) {
+    fun bind(item: ArticleItemData, toggleBookmarkListener: (String, Boolean) -> Unit) {
         val cornerRadius = context.dpToIntPx(8)
 
         Glide.with(context)
@@ -238,5 +242,8 @@ class ArticleItemView constructor(context: Context) : ViewGroup(context), Layout
         tv_likes_count.text = item.likeCount.toString()
         tv_comments_count.text = item.commentCount.toString()
         tv_read_duration.text = "${item.readDuration} min read"
+
+        iv_bookmark.isChecked = item.isBookmark
+        iv_bookmark.setOnClickListener { toggleBookmarkListener.invoke(item.id, item.isBookmark) }
     }
 }

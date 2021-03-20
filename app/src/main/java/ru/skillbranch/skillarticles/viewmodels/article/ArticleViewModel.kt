@@ -248,6 +248,7 @@ data class ArticleState(
         outState.set("searchQuery", searchQuery)
         outState.set("searchResults", searchResults)
         outState.set("searchPosition", searchPosition)
+        outState.set("comment", comment)
     }
 
     override fun restore(savedState: SavedStateHandle): IViewModelState {
@@ -255,7 +256,8 @@ data class ArticleState(
             isSearch = savedState["isSearch"] ?: false,
             searchQuery = savedState["searchQuery"],
             searchResults = savedState["searchResults"] ?: emptyList(),
-            searchPosition = savedState["searchPosition"] ?: 0
+            searchPosition = savedState["searchPosition"] ?: 0,
+            comment = savedState["comment"] ?: ""
         )
     }
 }

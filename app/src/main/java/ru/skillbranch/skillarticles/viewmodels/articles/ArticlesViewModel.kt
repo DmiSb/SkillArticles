@@ -45,6 +45,23 @@ class ArticlesViewModel(handle: SavedStateHandle) : BaseViewModel<ArticlesState>
         listData.observe(owner, Observer { onChange(it) })
     }
 
+    fun handleSearch(query: String?) {
+        query ?: return
+        updateState { it.copy(searchQuery = query) }
+    }
+
+    fun handleSearchMode(isSearch: Boolean) {
+        updateState {
+            it.copy(isSearch = isSearch)
+        }
+    }
+
+    fun handleToggleBookmark(articleId: String, hasBookmark: Boolean) {
+        updateState { it.copy(isLoading = true) }
+        repository.updateBookmark(articleId, !hasBookmark)
+        updateState { it.copy(isLoading = false) }
+    }
+
     private fun buildPagedList(
         dataFactory : ArticleDataFactory
     ) : LiveData<PagedList<ArticleItemData>>{
@@ -94,17 +111,6 @@ class ArticlesViewModel(handle: SavedStateHandle) : BaseViewModel<ArticlesState>
                 repository.insertArticlesToDb(items)
                 listData.value?.dataSource?.invalidate()
             }
-        }
-    }
-
-    fun handleSearch(query: String?) {
-        query ?: return
-        updateState { it.copy(searchQuery = query) }
-    }
-
-    fun handleSearchMode(isSearch: Boolean) {
-        updateState {
-            it.copy(isSearch = isSearch)
         }
     }
 }
