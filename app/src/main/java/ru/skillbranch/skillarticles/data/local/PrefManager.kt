@@ -1,14 +1,16 @@
 package ru.skillbranch.skillarticles.data.local
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
+import ru.skillbranch.skillarticles.App
 import ru.skillbranch.skillarticles.data.delegates.PrefDelegate
 
 @SuppressLint("RestrictedApi")
-class PrefManager(context: Context) {
-    val preferences: SharedPreferences by lazy { PreferenceManager(context).sharedPreferences }
+object  PrefManager {
+    internal val preferences : SharedPreferences by lazy {
+        PreferenceManager.getDefaultSharedPreferences(App.applicationContext())
+    }
 
     var storedBoolean by PrefDelegate(false)
     var storedString by PrefDelegate("test")
