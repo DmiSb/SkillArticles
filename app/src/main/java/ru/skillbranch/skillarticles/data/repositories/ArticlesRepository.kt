@@ -44,6 +44,40 @@ object ArticlesRepository {
                 sleep(100)
             }
     }
+
+    fun searchBookmarks(searchQuery: String): ArticleDataFactory =
+        ArticleDataFactory(
+            ArticleStrategy.SearchBookmarks(::findBookmarkArticlesByTitle, searchQuery)
+        )
+
+    fun allBookmarks(): ArticleDataFactory =
+        ArticleDataFactory(ArticleStrategy.AllBookmarks(::findArticlesBookmark))
+
+    fun updateBookmark(articleId: String, bookmark: Boolean) {
+        local.localArticleItems
+            .indexOfFirst { it.id == articleId }
+            .takeUnless { it == -1 }
+            ?.let { index ->
+                local.localArticleItems[index] =
+                    local.localArticleItems[index].copy(isBookmark = bookmark)
+            }
+        Log.d(" ArticlesRepository", "articleId $articleId bookmark $bookmark")
+    }
+
+    private fun findBookmarkArticlesByTitle(start: Int, size: Int, queryTitle: String) =
+        local.localArticleItems
+            .asSequence()
+            .filter { it.isBookmark && it.title.contains(queryTitle, true) }
+            .drop(start)
+            .take(size)
+            .toList()
+
+    private fun findArticlesBookmark(start: Int, size: Int) = local.localArticleItems
+        .asSequence()
+        .filter { it.isBookmark }
+        .drop(start)
+        .take(size)
+        .toList()
 }
 
 class ArticleDataFactory(
