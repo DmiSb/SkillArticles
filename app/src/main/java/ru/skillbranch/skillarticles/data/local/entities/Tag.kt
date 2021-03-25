@@ -22,7 +22,8 @@ data class Tag(
             parentColumns = ["id"],
             childColumns = ["a_id"],
             onDelete = ForeignKey.CASCADE
-        )]
+        )
+    ]
 )
 data class ArticleTagXRef(
     @ColumnInfo(name ="a_id" )

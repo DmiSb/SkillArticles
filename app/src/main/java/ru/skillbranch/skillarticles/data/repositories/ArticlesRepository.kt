@@ -1,146 +1,194 @@
 package ru.skillbranch.skillarticles.data.repositories
 
-import android.util.Log
+import androidx.annotation.VisibleForTesting
+import androidx.lifecycle.LiveData
 import androidx.paging.DataSource
-import androidx.paging.PositionalDataSource
-import ru.skillbranch.skillarticles.data.LocalDataHolder
+import androidx.sqlite.db.SimpleSQLiteQuery
 import ru.skillbranch.skillarticles.data.NetworkDataHolder
-import ru.skillbranch.skillarticles.data.models.ArticleItemData
-import java.lang.Thread.sleep
+import ru.skillbranch.skillarticles.data.local.DbManager.db
+import ru.skillbranch.skillarticles.data.local.dao.*
+import ru.skillbranch.skillarticles.data.local.entities.ArticleItem
+import ru.skillbranch.skillarticles.data.local.entities.ArticleTagXRef
+import ru.skillbranch.skillarticles.data.local.entities.CategoryData
+import ru.skillbranch.skillarticles.data.local.entities.Tag
+import ru.skillbranch.skillarticles.data.remote.res.ArticleRes
+import ru.skillbranch.skillarticles.extensions.data.toArticle
+import ru.skillbranch.skillarticles.extensions.data.toArticleCounts
 
-object ArticlesRepository {
-    private val local = LocalDataHolder
+interface IArticlesRepository {
+    fun loadArticlesFromNetwork(start: Int = 0, size: Int) : List<ArticleRes>
+    fun insertArticlesToDb(articles: List<ArticleRes>)
+    fun toggleBookmark(articleId: String)
+    fun findTags(): LiveData<List<String>>
+    fun findCategoriesData(): LiveData<List<CategoryData>>
+    fun rawQueryArticles(filter: ArticleFilter): DataSource.Factory<Int, ArticleItem>
+    fun incrementTagUseCount(tag: String)
+}
+
+object ArticlesRepository : IArticlesRepository {
     private val network = NetworkDataHolder
+    private var articlesDao = db.articlesDao()
+    private var articleCountsDao = db.articleCountsDao()
+    private var categoriesDao = db.categoriesDao()
+    private var tagsDao = db.tagsDao()
+    private var articlePersonalDao = db.articlePersonalInfosDao()
 
-    fun allArticles(): ArticleDataFactory =
-        ArticleDataFactory(ArticleStrategy.AllArticles(::findArticlesByRange))
+    @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+    fun setupTestDao(
+        articlesDao: ArticlesDao,
+        articleCountsDao: ArticleCountsDao,
+        categoriesDao: CategoriesDao,
+        tagsDao: TagsDao,
+        articlePersonalDao: ArticlePersonalInfosDao
+    ){
+        this.articlesDao = articlesDao
+        this.articleCountsDao = articleCountsDao
+        this.categoriesDao = categoriesDao
+        this.tagsDao = tagsDao
+        this.articlePersonalDao = articlePersonalDao
 
-    fun searchArticles(searchQuery: String) =
-        ArticleDataFactory(ArticleStrategy.SearchArticle(::searchArticlesByTitle, searchQuery))
-
-    private fun findArticlesByRange(start: Int, size: Int) = local.localArticleItems
-        .drop(start)
-        .take(size)
-
-    private fun searchArticlesByTitle(start: Int, size: Int, queryTitle: String) =
-        local.localArticleItems
-            .asSequence()
-            .filter { it.title.contains(queryTitle, true) }
-            .drop(start)
-            .take(size)
-            .toList()
-
-    fun loadArticlesFromNetwork(start: Int, size: Int): List<ArticleItemData> =
-        network.networkArticleItems
-            .drop(start)
-            .take(size)
-            .apply {
-                sleep(500)
-            }
-
-    fun insertArticlesToDb(articles: List<ArticleItemData>) {
-        local.localArticleItems.addAll(articles)
-            .apply {
-                sleep(100)
-            }
     }
 
-    fun searchBookmarks(searchQuery: String): ArticleDataFactory =
-        ArticleDataFactory(
-            ArticleStrategy.SearchBookmarks(::findBookmarkArticlesByTitle, searchQuery)
-        )
+    override fun loadArticlesFromNetwork(start: Int, size: Int): List<ArticleRes> =
+        network.findArticlesItem(start, size)
 
-    fun allBookmarks(): ArticleDataFactory =
-        ArticleDataFactory(ArticleStrategy.AllBookmarks(::findArticlesBookmark))
+    override fun insertArticlesToDb(articles: List<ArticleRes>) {
+        articlesDao.upsert(articles.map { it.data.toArticle() })
+        articleCountsDao.upsert(articles.map { it.counts.toArticleCounts() })
 
-    fun updateBookmark(articleId: String, bookmark: Boolean) {
-        local.localArticleItems
-            .indexOfFirst { it.id == articleId }
-            .takeUnless { it == -1 }
-            ?.let { index ->
-                local.localArticleItems[index] =
-                    local.localArticleItems[index].copy(isBookmark = bookmark)
+        val refs = articles.map { it.data }
+            .fold(mutableListOf<Pair<String, String>>()){acc, res ->
+                acc.also { list -> list.addAll(res.tags.map { res.id to it }) }
             }
-        Log.d(" ArticlesRepository", "articleId $articleId bookmark $bookmark")
+
+        val tags = refs.map { it.second }
+            .distinct()
+            .map { Tag(it) }
+
+        val categories = articles.map{it.data.category}
+        categoriesDao.insert(categories)
+        tagsDao.insert(tags)
+        tagsDao.insertRefs(refs.map { ArticleTagXRef(it.first, it.second) })
     }
 
-    private fun findBookmarkArticlesByTitle(start: Int, size: Int, queryTitle: String) =
-        local.localArticleItems
-            .asSequence()
-            .filter { it.isBookmark && it.title.contains(queryTitle, true) }
-            .drop(start)
-            .take(size)
-            .toList()
-
-    private fun findArticlesBookmark(start: Int, size: Int) = local.localArticleItems
-        .asSequence()
-        .filter { it.isBookmark }
-        .drop(start)
-        .take(size)
-        .toList()
-}
-
-class ArticleDataFactory(
-    val strategy: ArticleStrategy
-) : DataSource.Factory<Int, ArticleItemData>() {
-    override fun create(): DataSource<Int, ArticleItemData> = ArticleDataSource(strategy)
-}
-
-class ArticleDataSource(val strategy: ArticleStrategy) : PositionalDataSource<ArticleItemData>() {
-    override fun loadInitial(
-        params: LoadInitialParams,
-        callback: LoadInitialCallback<ArticleItemData>
-    ) {
-        val result = strategy.getItems(params.requestedStartPosition, params.requestedLoadSize)
-        Log.e("ArticlesRepository",
-            "loadInitial: start=${params.requestedStartPosition}, " +
-                    "size=${params.requestedLoadSize}, resultSize=${result.size}"
-        )
-        callback.onResult(result, params.requestedStartPosition)
+    override fun toggleBookmark(articleId: String) {
+        articlePersonalDao.toggleBookmarkOrInsert(articleId)
     }
 
-    override fun loadRange(params: LoadRangeParams, callback: LoadRangeCallback<ArticleItemData>) {
-        val result = strategy.getItems(params.startPosition, params.loadSize)
-        Log.e(            "ArticlesRepository",
-            "loadRange: start=${params.startPosition}, size=${params.loadSize}, resultSize=${result.size}"
-        )
-        callback.onResult(result)
+    override fun findTags(): LiveData<List<String>> {
+        return  tagsDao.findTags()
+    }
+
+    override fun findCategoriesData(): LiveData<List<CategoryData>> {
+        return categoriesDao.findAllCategoriesData()
+    }
+
+    override fun rawQueryArticles(filter: ArticleFilter): DataSource.Factory<Int, ArticleItem> {
+        return articlesDao.findArticlesByRaw(SimpleSQLiteQuery(filter.toQuery()))
+    }
+
+    override fun incrementTagUseCount(tag: String) {
+        tagsDao.incrementTagUseCount(tag)
     }
 }
 
 sealed class ArticleStrategy() {
-    abstract fun getItems(start: Int, size: Int): List<ArticleItemData>
+    abstract fun getItems(start: Int, size: Int): List<ArticleItem>
 
     class AllArticles(
-        private val itemProvider: (Int, Int) -> List<ArticleItemData>
+        private val itemProvider: (Int, Int) -> List<ArticleItem>
     ) : ArticleStrategy() {
-        override fun getItems(start: Int, size: Int): List<ArticleItemData> =
+        override fun getItems(start: Int, size: Int): List<ArticleItem> =
             itemProvider(start, size)
 
     }
 
     class SearchArticle(
-        private val itemProvider: (Int, Int, String) -> List<ArticleItemData>,
+        private val itemProvider: (Int, Int, String) -> List<ArticleItem>,
         private val query: String
     ) : ArticleStrategy() {
-        override fun getItems(start: Int, size: Int): List<ArticleItemData> =
+        override fun getItems(start: Int, size: Int): List<ArticleItem> =
             itemProvider(start, size, query)
 
     }
 
     class AllBookmarks(
-        private val itemProvider: (Int, Int) -> List<ArticleItemData>
+        private val itemProvider: (Int, Int) -> List<ArticleItem>
     ) : ArticleStrategy() {
-        override fun getItems(start: Int, size: Int): List<ArticleItemData> =
+        override fun getItems(start: Int, size: Int): List<ArticleItem> =
             itemProvider(start, size)
     }
 
     class SearchBookmarks(
-        private val itemProvider: (Int, Int, String) -> List<ArticleItemData>,
+        private val itemProvider: (Int, Int, String) -> List<ArticleItem>,
         private val query: String
     ) : ArticleStrategy() {
-        override fun getItems(start: Int, size: Int): List<ArticleItemData> =
+        override fun getItems(start: Int, size: Int): List<ArticleItem> =
             itemProvider(start, size, query)
 
+    }
+}
+
+data class ArticleFilter(
+    val search: String? = null,
+    val isBookmark: Boolean = false,
+    val categories: List<String> = listOf(),
+    val isHashtag: Boolean = false
+) {
+    fun toQuery(): String {
+        val qb = QueryBuilder()
+        qb.table("ArticleItem")
+
+        if(search != null && !isHashtag) qb.appendWhere("title LIKE '%$search%'")
+        if(search != null && isHashtag) {
+            qb.innerJoin("article_tag_x_ref AS refs", "refs.a_id = id")
+            qb.appendWhere("refs.t_id = '$search'")
+        }
+        if (isBookmark) qb.appendWhere("is_bookmark = 1")
+        if(categories.isNotEmpty()) qb.appendWhere("category_id IN (${categories.joinToString(",")})")
+        qb.orderBy("date")
+        return qb.build()
+    }
+}
+
+class QueryBuilder() {
+    private var table: String? = null
+    private var selectColums: String = "*"
+    private var joinTables: String? = null
+    private var whereCondition: String? = null
+    private var order: String? = null
+
+    fun build(): String {
+        check(table != null) { "table must be not null" }
+        val strBuilder = StringBuilder("SELECT ")
+            .append("$selectColums")
+            .append("FROM $table ")
+
+        if(joinTables!=null) strBuilder.append(joinTables)
+        if (whereCondition != null) strBuilder.append(whereCondition)
+        if (order != null) strBuilder.append(order)
+        return strBuilder.toString()
+    }
+
+    fun table(table: String): QueryBuilder {
+        this.table = table
+        return this
+    }
+
+    fun orderBy(column: String, isDesc: Boolean = true): QueryBuilder {
+        order = "ORDER BY $column ${if (isDesc) "DESC" else "ASK"}"
+        return this
+    }
+
+    fun appendWhere(condition: String, logic: String = "AND"): QueryBuilder {
+        if (whereCondition.isNullOrEmpty()) whereCondition = "WHERE $condition "
+        else whereCondition += "$logic $condition "
+        return this
+    }
+
+    fun innerJoin(table: String, on: String) :QueryBuilder {
+        if(joinTables.isNullOrEmpty()) joinTables = "INNER JOIN $table ON $on "
+        else joinTables += "INNER JOIN $table ON $on "
+        return this
     }
 }
