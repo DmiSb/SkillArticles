@@ -236,7 +236,9 @@ data class ArticleState(
     val commentsCount: Int = 0,
     val answerTo: String? = null,
     val answerToSlug: String? = null,
-    val showBottomBar: Boolean = true
+    val showBottomBar: Boolean = true,
+    val hashtags: List<String> = emptyList(),
+    val source: String? = null
 ) : IViewModelState {
 
     override fun save(outState: SavedStateHandle) {

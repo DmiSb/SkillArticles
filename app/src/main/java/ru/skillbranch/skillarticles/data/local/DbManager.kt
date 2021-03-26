@@ -31,7 +31,7 @@ object DbManager {
     exportSchema = false,
     views = [ArticleItem::class, ArticleFull::class]
 )
-@TypeConverters(DateConverter::class)
+@TypeConverters(DateConverter::class, ListConverter::class)
 abstract class AppDb : RoomDatabase() {
     companion object {
         const val DATABASE_NAME = BuildConfig.APPLICATION_ID + ".db"
