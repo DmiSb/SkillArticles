@@ -99,6 +99,7 @@ class ArticleItemView constructor(
         addView(iv_likes)
 
         tv_likes_count = TextView(context).apply {
+            id = R.id.tv_likes_count
             setTextColor(grayColor)
             textSize = 12f
         }
@@ -106,6 +107,7 @@ class ArticleItemView constructor(
 
 
         iv_comments = ImageView(context).apply {
+            id = R.id.iv_comments
             imageTintList = ColorStateList.valueOf(grayColor)
             setImageResource(R.drawable.ic_insert_comment_black_24dp)
         }
