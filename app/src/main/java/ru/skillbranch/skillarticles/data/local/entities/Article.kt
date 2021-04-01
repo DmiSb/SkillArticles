@@ -1,6 +1,7 @@
 package ru.skillbranch.skillarticles.data.local.entities
 
 import androidx.room.*
+import ru.skillbranch.skillarticles.data.local.ListConverter
 import ru.skillbranch.skillarticles.data.local.MarkdownConverter
 import ru.skillbranch.skillarticles.data.repositories.MarkdownElement
 import java.util.*
@@ -78,7 +79,7 @@ data class ArticleItem(
         GROUP BY id
     """
 )
-@TypeConverters(MarkdownConverter::class)
+@TypeConverters(MarkdownConverter::class, ListConverter::class)
 data class ArticleFull(
     val id: String,
     val title: String,

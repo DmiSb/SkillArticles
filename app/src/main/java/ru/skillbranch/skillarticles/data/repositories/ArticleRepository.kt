@@ -2,7 +2,6 @@ package ru.skillbranch.skillarticles.data.repositories
 
 import android.util.Log
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.paging.DataSource
 import androidx.paging.ItemKeyedDataSource
 import ru.skillbranch.skillarticles.data.NetworkDataHolder
@@ -26,7 +25,7 @@ interface IArticleRepository {
     fun getAppSettings(): LiveData<AppSettings>
     fun toggleLike(articleId: String)
     fun toggleBookmark(articleId: String)
-    fun isAuth(): MutableLiveData<Boolean>
+    fun isAuth(): LiveData<Boolean>
     fun loadCommentsByRange(slug: String?, size: Int,articleId: String) : List<CommentItemData>
     fun sendMessage(articleId: String, text: String, answerToSlug: String?)
     fun loadAllComments(articleId: String, total: Int): CommentsDataFactory
@@ -62,7 +61,7 @@ object ArticleRepository : IArticleRepository{
         return articlesDao.findFullArticle(articleId)
     }
 
-    override fun getAppSettings(): LiveData<AppSettings> = preferences.getAppSettings() //from preferences
+    override fun getAppSettings(): LiveData<AppSettings> = preferences.appSettings //from preferences
 
     override fun toggleLike(articleId: String) {
         articlesPersonalDao.toggleLikeOrInsert(articleId)
@@ -73,7 +72,8 @@ object ArticleRepository : IArticleRepository{
     }
 
     override fun updateSettings(appSettings: AppSettings) {
-        preferences.updateSettings(appSettings)
+        preferences.isBigText = appSettings.isBigText
+        preferences.isDarkMode = appSettings.isDarkMode
     }
 
     override fun fetchArticleContent(articleId: String) {
@@ -87,7 +87,7 @@ object ArticleRepository : IArticleRepository{
         return articleCountsDao.getCommentsCount(articleId)
     }
 
-    override fun isAuth(): MutableLiveData<Boolean> = preferences.isAuth()
+    override fun isAuth(): LiveData<Boolean> = preferences.isAuthLive
 
     override fun loadAllComments(articleId: String, totalCount: Int) = CommentsDataFactory(
         itemProvider = ::loadCommentsByRange,
