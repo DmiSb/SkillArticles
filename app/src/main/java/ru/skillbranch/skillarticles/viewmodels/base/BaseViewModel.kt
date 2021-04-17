@@ -94,6 +94,10 @@ abstract class BaseViewModel<T : IViewModelState>(private val handleState: Saved
         navigation.observe(owner, EventObserver { onNavigate(it) })
     }
 
+    fun observeLoading(owner: LifecycleOwner, onChanged: (newState: Loading) -> Unit) {
+        loading.observe(owner, Observer { onChanged(it!!) })
+    }
+
     /***
      * функция принимает источник данных и лямбда выражение обрабатывающее поступающие данные источника
      * лямбда принимает новые данные и текущее состояние ViewModel в качестве аргументов,
