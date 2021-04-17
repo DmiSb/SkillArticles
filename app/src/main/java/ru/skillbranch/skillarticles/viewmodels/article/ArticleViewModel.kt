@@ -6,7 +6,7 @@ import androidx.paging.PagedList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import ru.skillbranch.skillarticles.data.models.CommentItemData
+import ru.skillbranch.skillarticles.data.remote.res.CommentRes
 import ru.skillbranch.skillarticles.data.repositories.ArticleRepository
 import ru.skillbranch.skillarticles.data.repositories.CommentsDataFactory
 import ru.skillbranch.skillarticles.data.repositories.MarkdownElement
@@ -33,9 +33,9 @@ class ArticleViewModel(
             .build()
     }
 
-    private val listData: LiveData<PagedList<CommentItemData>> =
+    private val listData: LiveData<PagedList<CommentRes>> =
         Transformations.switchMap(repository.findArticleCommentCount(articleId)) {
-            buildPageList(repository.loadAllComments(articleId, it))
+            buildPageList(repository.loadAllComments(articleId, it, ::commentLoadErrorHandler))
         }
 
     init {
@@ -51,7 +51,9 @@ class ArticleViewModel(
                 isBookmark = article.isBookmark,
                 isLike = article.isLike,
                 content = article.content ?: emptyList(),
-                isLoadingContent = article.content == null
+                isLoadingContent = article.content == null,
+                source = article.source,
+                hashtags = article.tags
             )
         }
 
@@ -64,6 +66,17 @@ class ArticleViewModel(
         subscribeOnDataSource(repository.isAuth()) { auth, state ->
             state.copy(isAuth = auth)
         }
+    }
+
+    fun refresh() {
+        launchSafety {
+            launch { repository.fetchArticleContent(articleId) }
+            launch { repository.refreshCommentsCount(articleId) }
+        }
+    }
+
+    private fun commentLoadErrorHandler(throwable: Throwable) {
+        // TODO handle network errors
     }
 
     private fun fetchContent() {
@@ -178,7 +191,7 @@ class ArticleViewModel(
 
     fun observeList(
         owner: LifecycleOwner,
-        onChange: (list: PagedList<CommentItemData>) -> Unit
+        onChange: (list: PagedList<CommentRes>) -> Unit
     ) {
         listData.observe(owner, Observer {
             onChange(it)
@@ -187,8 +200,8 @@ class ArticleViewModel(
 
     private fun buildPageList(
         dataFactory: CommentsDataFactory
-    ): LiveData<PagedList<CommentItemData>> {
-        return LivePagedListBuilder<String, CommentItemData>(
+    ): LiveData<PagedList<CommentRes>> {
+        return LivePagedListBuilder<String, CommentRes>(
             dataFactory,
             listConfig
         )
@@ -207,8 +220,6 @@ class ArticleViewModel(
     fun handleReplyTo(slug: String, name: String) {
         updateState { it.copy(answerToSlug = slug, answerTo = "Reply to $name") }
     }
-
-
 }
 
 data class ArticleState(

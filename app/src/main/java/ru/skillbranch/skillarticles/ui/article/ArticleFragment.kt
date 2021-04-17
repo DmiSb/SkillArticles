@@ -44,6 +44,7 @@ import ru.skillbranch.skillarticles.ui.delegates.RenderProp
 import ru.skillbranch.skillarticles.viewmodels.article.ArticleState
 import ru.skillbranch.skillarticles.viewmodels.article.ArticleViewModel
 import ru.skillbranch.skillarticles.viewmodels.base.IViewModelState
+import ru.skillbranch.skillarticles.viewmodels.base.Loading
 import ru.skillbranch.skillarticles.viewmodels.base.ViewModelFactory
 
 class ArticleFragment : BaseFragment<ArticleViewModel>(), IArticleView {
@@ -70,8 +71,7 @@ class ArticleFragment : BaseFragment<ArticleViewModel>(), IArticleView {
     override val binding: ArticleBinding by lazy { ArticleBinding() }
 
     override val prepareToolbar: (ToolbarBuilder.() -> Unit) = {
-        this.setTitle(args.title)
-            .setSubtitle(args.category)
+        this.setSubtitle(args.category)
             .setLogo(args.categoryIcon)
             .addMenuItem(
                 MenuItemHolder(
@@ -98,6 +98,10 @@ class ArticleFragment : BaseFragment<ArticleViewModel>(), IArticleView {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
+    }
+
+    override fun renderLoading(loadingState: Loading) {
+
     }
 
     override fun setupViews() {
