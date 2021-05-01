@@ -14,7 +14,7 @@ abstract class BaseFragment<T: BaseViewModel<out IViewModelState>> : Fragment() 
     val root: RootActivity
         get() = activity as RootActivity
     open val binding: Binding? = null
-    protected abstract val viewModel: T
+    abstract val viewModel: T
     protected abstract val layout: Int
 
     open val prepareToolbar: (ToolbarBuilder.() -> Unit)? = null
@@ -31,18 +31,6 @@ abstract class BaseFragment<T: BaseViewModel<out IViewModelState>> : Fragment() 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        root
-            .toolbarBuilder
-            .invalidate()
-            .prepare(prepareToolbar)
-            .build(root)
-
-        root
-            .bottombarBuilder
-            .invalidate()
-            .prepare(prepareBottombar)
-            .build(root)
 
         viewModel.restoreState()
         binding?.restoreUi(savedInstanceState)
@@ -64,12 +52,25 @@ abstract class BaseFragment<T: BaseViewModel<out IViewModelState>> : Fragment() 
         viewModel.observeLoading(viewLifecycleOwner) {
             renderLoading(it)
         }
-
-        setupViews()
     }
 
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
         super.onViewStateRestored(savedInstanceState)
+
+        root
+            .toolbarBuilder
+            .invalidate()
+            .prepare(prepareToolbar)
+            .build(root)
+
+        root
+            .bottombarBuilder
+            .invalidate()
+            .prepare(prepareBottombar)
+            .build(root)
+
+        setupViews()
+
         binding?.rebind()
     }
 

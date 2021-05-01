@@ -23,6 +23,9 @@ abstract class BaseViewModel<T : IViewModelState>(private val handleState: Saved
 
     private val loading = MutableLiveData<Loading>(Loading.HIDE_LOADING)
 
+    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
+    val permissions = MutableLiveData<Event<List<String>>>()
+
     /***
      * Инициализация начального состояния аргументом конструктоа, и объявления состояния как
      * MediatorLiveData - медиатор исспользуется для того чтобы учитывать изменяемые данные модели
@@ -46,7 +49,7 @@ abstract class BaseViewModel<T : IViewModelState>(private val handleState: Saved
      * модифицированное состояние, которое присваивается текущему состоянию
      */
     @UiThread
-    protected inline fun updateState(update: (currentState: T) -> T) {
+    inline fun updateState(update: (currentState: T) -> T) {
         val updatedState: T = update(currentState)
         state.value = updatedState
     }
@@ -154,6 +157,14 @@ abstract class BaseViewModel<T : IViewModelState>(private val handleState: Saved
             hideLoading()
             compHandler?.invoke(it)
         }
+    }
+
+    fun requestPermissions(requestedPermissions: List<String>) {
+        permissions.value = Event(requestedPermissions)
+    }
+
+    fun observePermissions(owner: LifecycleOwner, handle: (permissions: List<String>) -> Unit) {
+        permissions.observe(owner, EventObserver { handle(it) })
     }
 }
 

@@ -21,7 +21,6 @@
             android:theme="@style/ArticleBarsTheme"
             app:layout_scrollFlags="scroll|enterAlwaysCollapsed"
             app:title="@string/app_name" />
-
     </com.google.android.material.appbar.AppBarLayout>
 
     <fragment
@@ -49,6 +48,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:visibility="gone"
-        tools:visibility="visible"/>
+        tools:visibility="visible" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
