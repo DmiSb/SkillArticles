@@ -60,6 +60,7 @@ abstract class BaseViewModel<T : IViewModelState>(private val handleState: Saved
      * повторно
      */
     @UiThread
+    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     fun notify(content: Notify) {
         notifications.value = Event(content)
     }
