@@ -60,7 +60,7 @@ abstract class BaseViewModel<T : IViewModelState>(private val handleState: Saved
      * повторно
      */
     @UiThread
-    protected fun notify(content: Notify) {
+    fun notify(content: Notify) {
         notifications.value = Event(content)
     }
 
