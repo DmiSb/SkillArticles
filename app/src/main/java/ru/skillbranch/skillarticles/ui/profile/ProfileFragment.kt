@@ -42,7 +42,6 @@ class ProfileFragment() : BaseFragment<ProfileViewModel>() {
     //for testing
     private lateinit var resultRegistry: ActivityResultRegistry
     var _mockFactory: ((SavedStateRegistryOwner) -> ViewModelProvider.Factory)? = null
-    var _mockRoot: RootActivity? = null
 
     override val viewModel: ProfileViewModel by viewModels {
         _mockFactory?.invoke(this) ?: defaultViewModelProviderFactory
