@@ -16,8 +16,10 @@ abstract class BaseFragment<T: BaseViewModel<out IViewModelState>> : Fragment() 
     var _mockRoot: RootActivity? = null
 
     val root: RootActivity
-        get() = activity as RootActivity
+        get() = _mockRoot ?: activity as RootActivity
     open val binding: Binding? = null
+
+    @VisibleForTesting(otherwise = VisibleForTesting.PROTECTED)
     abstract val viewModel: T
     protected abstract val layout: Int
 
@@ -37,7 +39,6 @@ abstract class BaseFragment<T: BaseViewModel<out IViewModelState>> : Fragment() 
         super.onViewCreated(view, savedInstanceState)
 
         viewModel.restoreState()
-        binding?.restoreUi(savedInstanceState)
 
         viewModel.observeState(viewLifecycleOwner) {
             binding?.bind(it)
@@ -52,10 +53,9 @@ abstract class BaseFragment<T: BaseViewModel<out IViewModelState>> : Fragment() 
         viewModel.observeNavigation(viewLifecycleOwner) {
             root.viewModel.navigate(it)
         }
+        viewModel.observeLoading(viewLifecycleOwner){ renderLoading(it) }
 
-        viewModel.observeLoading(viewLifecycleOwner) {
-            renderLoading(it)
-        }
+        binding?.restoreUi(savedInstanceState)
     }
 
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
@@ -100,7 +100,7 @@ abstract class BaseFragment<T: BaseViewModel<out IViewModelState>> : Fragment() 
         super.onPrepareOptionsMenu(menu)
     }
 
-    open fun renderLoading(loadingState: Loading) {
+    open fun renderLoading(loadingState: Loading){
         root.renderLoading(loadingState)
     }
 }
